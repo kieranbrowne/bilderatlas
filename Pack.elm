@@ -12,6 +12,8 @@ import List exposing (map, range)
 import Random
 import Time
 
+import Html.Events.Extra.Mouse as Mouse
+
 
 type Status = Full | NotFull
 
@@ -23,21 +25,19 @@ type alias Rect
     }
 
 type alias Model
-  = { window : { width: Int, height: Int} 
+  = { window : { width: Int, height: Int}
     , status : Status
+    , loc : { x: Float, y: Float}
+    , mouse : { x: Float, y: Float}
     , rects : List Rect }
 
 type Msg
   = Noop
   | AddRect
   | GotViewport (Result () Browser.Dom.Viewport)
+  | MouseMove ( Float, Float )
+  | Move
 
-roll =
-  Random.int 2 4
-
-
-minHeight = 120
-maxHeight = 400
 
 
 gap = 32
@@ -55,8 +55,8 @@ possibleRects model w h =
         maxy = -miny - h
     in
       (List.concatMap (\x -> (map (\y -> {x=x, y=y,w=w,h=h})
-                                  (range miny maxy)))
-            (range minx maxx))
+                                  (map ((+) ((round model.loc.y) // 40)) (range miny maxy))))
+            (map ((+) ((round model.loc.x) // 40)) (range minx maxx)))
 
 
 
@@ -93,6 +93,16 @@ update msg model =
       ( { model | window = { width = (floor x.viewport.width), height = (floor x.viewport.height) }}, Cmd.none )
     GotViewport _ ->
       ( model , Cmd.none )
+    MouseMove (x, y) ->
+      ( {model | mouse = { x = (x - (toFloat model.window.width) / 2), y =  (y - (toFloat model.window.height) / 2)}, status = NotFull}, Cmd.none )
+    Move ->
+        let pow = (sqrt (model.mouse.x^2 + model.mouse.y^2) - 100) / 10000
+        in
+          case pow > 0 of
+              True ->
+                ( {model | loc = { x = model.loc.x + model.mouse.x * pow, y = model.loc.y + model.mouse.y * pow}, status = NotFull}, Cmd.none )
+              False ->
+                ( model , Cmd.none )
 
 
 
@@ -106,8 +116,8 @@ px x
 
 rectScaler : Model -> Rect -> Rect
 rectScaler model rect =
-    let x = rect.x * (gutter+gap) + (model.window.width//2)
-        y = rect.y * (gutter+gap) + (model.window.height//2)
+    let x = rect.x * (gutter+gap) + (model.window.width//2) - (round model.loc.x)
+        y = rect.y * (gutter+gap) + (model.window.height//2) - (round model.loc.y)
         w = rect.w * gap + (rect.w-1)*gutter
         h = rect.h * gap + (rect.h-1)*gutter
     in { x=x, y=y, w=w, h=h }
@@ -134,20 +144,23 @@ drawSpace r =
 
 view : Model -> Html Msg
 view model =
-  div [ onClick AddRect] 
+  div [ style "width" "100vw", style "height" "100vh", style "position" "relative",  Mouse.onMove (\event -> MouseMove event.screenPos)]
       [ -- div [] (map (drawSpace << rectScaler model) (possibleRects model 1 1))
        div [] (map (drawRect << rectScaler model)  model.rects)
       ]
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Time.every 60 (always AddRect)
+  Sub.batch [ Time.every 100 (always AddRect)
+            , Time.every 40 (always Move) ]
 
 
 initialModel: () -> ( Model, Cmd Msg )
 initialModel _ =
   ( { window = {width = 0, height = 0}
     , status = NotFull
+    , loc = { x = 0, y = 0}
+    , mouse = { x = 0, y = 0}
     , rects = [{x = -2, y = -2, w = 4, h = 4}] }
   , Task.attempt GotViewport Browser.Dom.getViewport )
 

@@ -1,0 +1,15 @@
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+@keyframes example {
+  from {transform: scale(.8); opacity: 0;}
+  to {transform: scale(1); opacity: 1;}
+}
+div > div > div {
+  transform-origin: center center;
+  animation-name: example;
+  animation-duration: 1s;
+}
+
