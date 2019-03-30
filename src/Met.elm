@@ -9,7 +9,9 @@ api = "https://collectionapi.metmuseum.org/public/collection/v1/objects/"
 type Msg
   = GotText (Result Http.Error String)
 
-getMetObject : Int -> Cmd Msg
+type alias ID = Int
+
+getMetObject : ID -> Cmd Msg
 getMetObject id =
   Http.get
     { url = String.join "" [ api , (String.fromInt id) ]

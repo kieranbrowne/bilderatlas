@@ -5,24 +5,31 @@ import Html exposing (..)
 import Browser
 import String
 import Met exposing (getMetObject, Msg(..))
+import List exposing (map)
 
 
-ids = [34 , 1]
+ids = [34 , 37]
 
 
 
-
-type Model
+type Image
   = Failure
   | Loading
   | Success String
 
+type Model
+  = List Image
 
-init : () -> (Model, Cmd Msg)
-init _ =
+
+init : Int -> (Image, Cmd Msg)
+init id =
   ( Loading
-  , getMetObject 37
+  , getMetObject id
   )
+
+initall : () -> List (Image, Cmd Msg)
+initall _ =
+    (map init ids)
 
 
 subscriptions : Model -> Sub Msg
@@ -30,7 +37,7 @@ subscriptions model =
   Sub.none
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Image -> (Image, Cmd Msg)
 update msg model =
   case msg of
     GotText result ->
@@ -46,9 +53,10 @@ update msg model =
 imageStyle =
   [ style "width" "30%", style "margin-left" "12px" ]
 
-view : Model -> Html Msg
-view model =
-  case model of
+
+imageView : Image -> Html Msg
+imageView img =
+  case img of
     Failure ->
       text "I was unable to find artefact."
 
@@ -56,15 +64,18 @@ view model =
       text "Loading..."
 
     Success fullText ->
-      pre [] [
-             img ( [ src fullText ] ++ imageStyle ) []
-           , img ( [ src fullText ] ++ imageStyle ) []
-          ]
+      img ( [ src fullText ] ++ imageStyle ) []
+
+
+
+view : Model -> Html Msg
+view model =
+    div [] (map imageView model)
 
 
 main =
   Browser.element
-    { init = init
+    { init = initall
     , update = update
     , subscriptions = subscriptions
     , view = view
