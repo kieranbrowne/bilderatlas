@@ -17,7 +17,7 @@ import Html.Events.Extra.Mouse as Mouse
 import Http
 import Json.Decode exposing (Decoder, field, string, map4, int)
 
-api = "http://localhost:3000/"
+api = "https://dev.kieranbrowne.com/infinite-salon-api/"
 
 
 getNMAObject : Int -> Int -> Cmd Msg
