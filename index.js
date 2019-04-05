@@ -4538,7 +4538,7 @@ var author$project$Main$NotFull = {$: 'NotFull'};
 var author$project$Main$GotJson = function (a) {
 	return {$: 'GotJson', a: a};
 };
-var author$project$Main$api = 'http://localhost:3000/';
+var author$project$Main$api = 'https://dev.kieranbrowne.com/infinite-salon-api/';
 var author$project$Main$UnplacedRect = F4(
 	function (w, h, url, color) {
 		return {color: color, h: h, url: url, w: w};
