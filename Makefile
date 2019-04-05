@@ -7,5 +7,5 @@ build:
 	elm make Pack.elm --output=public/index.js
 
 deploy: build
-	git subtree push --prefix resources/public/ origin gh-pages
+	git subtree push --prefix public/ origin gh-pages
 
