@@ -6,6 +6,6 @@ open:
 build:
 	elm make Pack.elm --output=public/index.js
 
-deploy: build
+deploy:
 	git subtree push --prefix public/ origin gh-pages
 
