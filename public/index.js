@@ -4575,14 +4575,10 @@ var author$project$Main$NotFull = {$: 'NotFull'};
 var author$project$Main$RandomPick = function (a) {
 	return {$: 'RandomPick', a: a};
 };
-var author$project$Main$GotJson = function (a) {
-	return {$: 'GotJson', a: a};
+var author$project$Main$GotOptions = function (a) {
+	return {$: 'GotOptions', a: a};
 };
-var author$project$Main$api = 'https://kieranbrowne.com/infinite-salon/data/object/';
-var author$project$Main$UnplacedRect = F4(
-	function (w, h, url, color) {
-		return {color: color, h: h, url: url, w: w};
-	});
+var author$project$Main$api = 'https://kieranbrowne.com/infinite-salon/data/';
 var elm$core$Array$branchFactor = 32;
 var elm$core$Array$Array_elm_builtin = F4(
 	function (a, b, c, d) {
@@ -5058,17 +5054,9 @@ var elm$json$Json$Decode$errorToStringHelp = F2(
 			}
 		}
 	});
-var elm$json$Json$Decode$field = _Json_decodeField;
-var elm$json$Json$Decode$int = _Json_decodeInt;
-var elm$json$Json$Decode$map4 = _Json_map4;
+var elm$json$Json$Decode$list = _Json_decodeList;
 var elm$json$Json$Decode$string = _Json_decodeString;
-var author$project$Main$nmaDecoder = A5(
-	elm$json$Json$Decode$map4,
-	author$project$Main$UnplacedRect,
-	A2(elm$json$Json$Decode$field, 'w', elm$json$Json$Decode$int),
-	A2(elm$json$Json$Decode$field, 'h', elm$json$Json$Decode$int),
-	A2(elm$json$Json$Decode$field, 'url', elm$json$Json$Decode$string),
-	A2(elm$json$Json$Decode$field, 'color', elm$json$Json$Decode$string));
+var author$project$Main$nmaOptionsDecoder = elm$json$Json$Decode$list(elm$json$Json$Decode$string);
 var elm$core$Result$mapError = F2(
 	function (f, result) {
 		if (result.$ === 'Ok') {
@@ -5950,17 +5938,15 @@ var elm$http$Http$get = function (r) {
 	return elm$http$Http$request(
 		{body: elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
 };
-var author$project$Main$getNMAObject = function (id) {
-	return elm$http$Http$get(
-		{
-			expect: A2(elm$http$Http$expectJson, author$project$Main$GotJson, author$project$Main$nmaDecoder),
-			url: A2(
-				elm$core$String$join,
-				'',
-				_List_fromArray(
-					[author$project$Main$api, id]))
-		});
-};
+var author$project$Main$getNMAOptions = elm$http$Http$get(
+	{
+		expect: A2(elm$http$Http$expectJson, author$project$Main$GotOptions, author$project$Main$nmaOptionsDecoder),
+		url: A2(
+			elm$core$String$join,
+			'',
+			_List_fromArray(
+				[author$project$Main$api, 'options']))
+	});
 var elm$browser$Browser$External = function (a) {
 	return {$: 'External', a: a};
 };
@@ -6227,9 +6213,6 @@ var elm$core$Array$fromList = function (list) {
 		return A3(elm$core$Array$fromListHelp, list, _List_Nil, 0);
 	}
 };
-var elm$core$Basics$negate = function (n) {
-	return -n;
-};
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Basics$composeL = F3(
 	function (g, f, x) {
@@ -6362,6 +6345,9 @@ var elm$random$Random$generate = F2(
 			elm$random$Random$Generate(
 				A2(elm$random$Random$map, tagger, generator)));
 	});
+var elm$core$Basics$negate = function (n) {
+	return -n;
+};
 var elm$core$Bitwise$and = _Bitwise_and;
 var elm$core$Bitwise$xor = _Bitwise_xor;
 var elm$random$Random$peel = function (_n0) {
@@ -6406,14 +6392,9 @@ var author$project$Main$initialModel = function (_n0) {
 		{
 			loc: {x: 0, y: 0},
 			mouse: {x: 0, y: 0},
-			options: elm$core$Array$fromList(
-				_List_fromArray(
-					['111093', '124649', '130791', '135578', '135585', '184451', '184649', '230014', '51049', '72643', '119160', '126016', '135349', '135579', '148312', '184505', '184657', '27762', '51050', '72644', '119182', '126019', '135350', '135582', '148408', '184509', '184716', '49587', '58904', '72682', '119258', '126596', '135571', '135583', '184447', '184512', '184803', '51048', '71099', '77210'])),
+			options: elm$core$Array$fromList(_List_Nil),
 			pick: 0,
-			rects: _List_fromArray(
-				[
-					{color: '#f00', h: 4, url: 'http://collectionsearch.nma.gov.au/nmacs-image-download/piction/dams_data/prodderivW/DAMS_INGEST/JOBS/WM_60618335/nma_60672802.jpg', w: 4, x: -2, y: -2}
-				]),
+			rects: _List_Nil,
 			status: author$project$Main$NotFull,
 			window: {height: 0, width: 0}
 		},
@@ -6421,7 +6402,7 @@ var author$project$Main$initialModel = function (_n0) {
 			_List_fromArray(
 				[
 					A2(elm$core$Task$attempt, author$project$Main$GotViewport, elm$browser$Browser$Dom$getViewport),
-					author$project$Main$getNMAObject('111093'),
+					author$project$Main$getNMAOptions,
 					A2(
 					elm$random$Random$generate,
 					author$project$Main$RandomPick,
@@ -6740,7 +6721,7 @@ var author$project$Main$possibleRects = F2(
 				return A2(
 					elm$core$List$map,
 					function (y) {
-						return {color: _new.color, h: _new.h, url: _new.url, w: _new.w, x: x, y: y};
+						return {color: _new.color, h: _new.h, id: _new.id, url: _new.url, w: _new.w, x: x, y: y};
 					},
 					A2(
 						elm$core$List$map,
@@ -6834,6 +6815,35 @@ var author$project$Main$addRect = F2(
 				}()
 			});
 	});
+var author$project$Main$GotJson = function (a) {
+	return {$: 'GotJson', a: a};
+};
+var author$project$Main$UnplacedRect = F5(
+	function (w, h, url, color, id) {
+		return {color: color, h: h, id: id, url: url, w: w};
+	});
+var elm$json$Json$Decode$field = _Json_decodeField;
+var elm$json$Json$Decode$int = _Json_decodeInt;
+var elm$json$Json$Decode$map5 = _Json_map5;
+var author$project$Main$nmaObjectDecoder = A6(
+	elm$json$Json$Decode$map5,
+	author$project$Main$UnplacedRect,
+	A2(elm$json$Json$Decode$field, 'w', elm$json$Json$Decode$int),
+	A2(elm$json$Json$Decode$field, 'h', elm$json$Json$Decode$int),
+	A2(elm$json$Json$Decode$field, 'url', elm$json$Json$Decode$string),
+	A2(elm$json$Json$Decode$field, 'color', elm$json$Json$Decode$string),
+	A2(elm$json$Json$Decode$field, 'id', elm$json$Json$Decode$string));
+var author$project$Main$getNMAObject = function (id) {
+	return elm$http$Http$get(
+		{
+			expect: A2(elm$http$Http$expectJson, author$project$Main$GotJson, author$project$Main$nmaObjectDecoder),
+			url: A2(
+				elm$core$String$join,
+				'',
+				_List_fromArray(
+					[author$project$Main$api, 'object/', id]))
+		});
+};
 var elm$core$Array$bitMask = 4294967295 >>> (32 - elm$core$Array$shiftStep);
 var elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
 var elm$core$Array$getHelp = F3(
@@ -6874,6 +6884,10 @@ var elm$core$Array$get = F2(
 			A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, tail)) : elm$core$Maybe$Just(
 			A3(elm$core$Array$getHelp, startShift, index, tree)));
 	});
+var elm$core$Array$length = function (_n0) {
+	var len = _n0.a;
+	return len;
+};
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$update = F2(
 	function (msg, model) {
@@ -6910,7 +6924,10 @@ var author$project$Main$update = F2(
 									A2(
 									elm$random$Random$generate,
 									author$project$Main$RandomPick,
-									A2(elm$random$Random$int, 0, 40))
+									A2(
+										elm$random$Random$int,
+										0,
+										elm$core$Array$length(model.options)))
 								])));
 				}
 			case 'GotViewport':
@@ -6957,12 +6974,26 @@ var author$project$Main$update = F2(
 				} else {
 					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				}
-			default:
+			case 'GotJson':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					var newImg = result.a;
 					return _Utils_Tuple2(
 						A2(author$project$Main$addRect, newImg, model),
+						elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
+			default:
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var newOptions = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								options: elm$core$Array$fromList(newOptions)
+							}),
 						elm$core$Platform$Cmd$none);
 				} else {
 					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
@@ -6979,44 +7010,73 @@ var author$project$Main$px = function (x) {
 		elm$core$String$fromInt(x),
 		'px');
 };
+var elm$html$Html$a = _VirtualDom_node('a');
 var elm$html$Html$div = _VirtualDom_node('div');
+var elm$json$Json$Encode$string = _Json_wrap;
+var elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			elm$json$Json$Encode$string(string));
+	});
+var elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
 var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
 var author$project$Main$drawRect = function (r) {
 	return A2(
-		elm$html$Html$div,
+		elm$html$Html$a,
 		_List_fromArray(
 			[
-				A2(elm$html$Html$Attributes$style, 'background-color', r.color),
-				A2(elm$html$Html$Attributes$style, 'position', 'absolute'),
-				A2(
-				elm$html$Html$Attributes$style,
-				'width',
-				author$project$Main$px(r.w)),
-				A2(
-				elm$html$Html$Attributes$style,
-				'height',
-				author$project$Main$px(r.h)),
-				A2(
-				elm$html$Html$Attributes$style,
-				'left',
-				author$project$Main$px(r.x)),
-				A2(
-				elm$html$Html$Attributes$style,
-				'top',
-				author$project$Main$px(r.y)),
-				A2(
-				elm$html$Html$Attributes$style,
-				'background-image',
+				elm$html$Html$Attributes$href(
 				A2(
 					elm$core$String$join,
 					'',
 					_List_fromArray(
-						['url(', r.url, ')']))),
-				A2(elm$html$Html$Attributes$style, 'background-size', 'cover'),
-				A2(elm$html$Html$Attributes$style, 'background-position', 'center')
+						['http://collectionsearch.nma.gov.au/object/', r.id])))
 			]),
-		_List_Nil);
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2(elm$html$Html$Attributes$style, 'background-color', r.color),
+						A2(elm$html$Html$Attributes$style, 'position', 'absolute'),
+						A2(
+						elm$html$Html$Attributes$style,
+						'width',
+						author$project$Main$px(r.w)),
+						A2(
+						elm$html$Html$Attributes$style,
+						'height',
+						author$project$Main$px(r.h)),
+						A2(
+						elm$html$Html$Attributes$style,
+						'left',
+						author$project$Main$px(r.x)),
+						A2(
+						elm$html$Html$Attributes$style,
+						'top',
+						author$project$Main$px(r.y)),
+						A2(
+						elm$html$Html$Attributes$style,
+						'background-image',
+						A2(
+							elm$core$String$join,
+							'',
+							_List_fromArray(
+								['url(', r.url, ')']))),
+						A2(elm$html$Html$Attributes$style, 'background-size', 'cover'),
+						A2(elm$html$Html$Attributes$style, 'background-position', 'center')
+					]),
+				_List_Nil)
+			]));
 };
 var author$project$Main$rectScaler = F2(
 	function (model, rect) {
@@ -7024,8 +7084,10 @@ var author$project$Main$rectScaler = F2(
 		var x = ((rect.x * (author$project$Main$gutter + author$project$Main$gap)) + ((model.window.width / 2) | 0)) - elm$core$Basics$round(model.loc.x);
 		var w = (rect.w * author$project$Main$gap) + ((rect.w - 1) * author$project$Main$gutter);
 		var h = (rect.h * author$project$Main$gap) + ((rect.h - 1) * author$project$Main$gutter);
-		return {color: rect.color, h: h, url: rect.url, w: w, x: x, y: y};
+		return {color: rect.color, h: h, id: rect.id, url: rect.url, w: w, x: x, y: y};
 	});
+var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
 var elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -7149,32 +7211,43 @@ var mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions = F3(
 	});
 var mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove = A2(mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions, 'mousemove', mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$defaultOptions);
 var author$project$Main$view = function (model) {
-	return A2(
-		elm$html$Html$div,
-		_List_fromArray(
-			[
-				A2(elm$html$Html$Attributes$style, 'width', '100vw'),
-				A2(elm$html$Html$Attributes$style, 'height', '100vh'),
-				A2(elm$html$Html$Attributes$style, 'position', 'relative'),
-				mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove(
-				function (event) {
-					return author$project$Main$MouseMove(event.screenPos);
-				}),
-				elm$html$Html$Events$onClick(author$project$Main$AddRect)
-			]),
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$div,
-				_List_Nil,
-				A2(
-					elm$core$List$map,
+	var _n0 = elm$core$List$length(model.rects) > 0;
+	if (_n0) {
+		return A2(
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					A2(elm$html$Html$Attributes$style, 'width', '100vw'),
+					A2(elm$html$Html$Attributes$style, 'height', '100vh'),
+					A2(elm$html$Html$Attributes$style, 'position', 'relative'),
+					mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove(
+					function (event) {
+						return author$project$Main$MouseMove(event.screenPos);
+					}),
+					elm$html$Html$Events$onClick(author$project$Main$AddRect)
+				]),
+			_List_fromArray(
+				[
 					A2(
-						elm$core$Basics$composeL,
-						author$project$Main$drawRect,
-						author$project$Main$rectScaler(model)),
-					model.rects))
-			]));
+					elm$html$Html$div,
+					_List_Nil,
+					A2(
+						elm$core$List$map,
+						A2(
+							elm$core$Basics$composeL,
+							author$project$Main$drawRect,
+							author$project$Main$rectScaler(model)),
+						model.rects))
+				]));
+	} else {
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$text('loading')
+				]));
+	}
 };
 var elm$browser$Browser$element = _Browser_element;
 var author$project$Main$main = elm$browser$Browser$element(
