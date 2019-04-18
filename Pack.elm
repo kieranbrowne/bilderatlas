@@ -14,6 +14,8 @@ import Random
 import Time
 
 import Html.Events.Extra.Mouse as Mouse
+import Html.Events.Extra.Touch as Touch
+import Html.Events exposing (on)
 
 import Http
 import Json.Decode as D exposing (Decoder, field, string, map5, int)
@@ -70,15 +72,21 @@ type alias UnplacedRect
     , id: String
     }
 
+type Touch
+  = Up
+  | Down
 
 type alias Model
   = { window : { width: Int, height: Int}
     , status : Status
     , loc : { x: Float, y: Float}
+    , storedloc : { x: Float, y: Float}
     , mouse : { x: Float, y: Float}
     , rects : List Rect
     , pick : Int
-    , options : Array String }
+    , options : Array String
+    , touch : Touch
+    }
 
 type Msg
   = Noop
@@ -86,6 +94,9 @@ type Msg
   | GotViewport (Result () Browser.Dom.Viewport)
   | MouseMove ( Float, Float )
   | Move
+  | TouchStart ( Float, Float )
+  | TouchEnd ( Float, Float )
+  | TouchMove ( Float, Float )
   | GotJson (Result Http.Error UnplacedRect)
   | GotOptions (Result Http.Error (List String))
   | RandomPick Int
@@ -157,14 +168,33 @@ update msg model =
     MouseMove (x, y) ->
       ( {model | mouse = { x = (x - (toFloat model.window.width) / 2), y = (y - (toFloat model.window.height) / 2)}, status = NotFull}, Cmd.none )
 
+
     Move ->
-        let pow = (sqrt (model.mouse.x^2 + model.mouse.y^2) - 100) / 10000
-        in
-          case pow > 0 of
-              True ->
-                ( {model | loc = { x = model.loc.x + model.mouse.x * pow, y = model.loc.y + model.mouse.y * pow * 2.5}, status = NotFull}, Cmd.none )
-              False ->
-                ( model , Cmd.none )
+        case model.touch of
+            Up ->
+              let pow = (sqrt (model.mouse.x^2 + model.mouse.y^2) - 100) / 10000
+              in
+                case pow > 0 of
+                    True ->
+                      ( {model | loc = { x = model.loc.x + model.mouse.x * pow, y = model.loc.y + model.mouse.y * pow * 2.5}, status = NotFull}, Cmd.none )
+                    False ->
+                        (model, Cmd.none)
+            Down ->
+                (model, Cmd.none)
+
+    TouchStart (x,y) ->
+      ( { model | touch = Down
+        , mouse = {x= x, y= y}
+        , storedloc = {x= model.loc.x, y = model.loc.y}
+        } , Cmd.none )
+    TouchEnd (x,y) ->
+      ( { model | touch = Up
+        , mouse = {x=0,y=0}} , Cmd.none )
+    TouchMove (x, y) ->
+        ( {model
+              | loc = { x = model.storedloc.x - (x-model.mouse.x)/1
+                      , y = model.storedloc.y - (y-model.mouse.y)/1 }
+              , status = NotFull}, Cmd.none )
 
     GotJson result ->
         case result of
@@ -224,11 +254,27 @@ drawSpace r =
         , style "top" (px r.y)
         ] []
 
+
+touchCoordinates : Touch.Event -> ( Float, Float )
+touchCoordinates touchEvent =
+    List.head touchEvent.changedTouches
+        |> Maybe.map .clientPos
+        |> Maybe.withDefault ( 0, 0 )
+
+
 view : Model -> Html Msg
 view model =
   case (List.length model.rects) > 0 of
       True ->
-        div [ style "width" "100vw", style "height" "100vh", style "position" "relative",  Mouse.onMove (\event -> MouseMove event.screenPos), onClick AddRect]
+        div [ style "width" "100vw"
+            , style "height" "100vh"
+            , style "position" "relative"
+            , Mouse.onMove (\event -> MouseMove event.screenPos)
+            --, onClick AddRect
+            , Touch.onStart (TouchStart << touchCoordinates)
+            , Touch.onEnd (TouchEnd << touchCoordinates)
+            , Touch.onMove (TouchMove << touchCoordinates)
+            ]
             [-- div [] (map (drawSpace << rectScaler model) (possibleRects model {w=1,h=1,url="",color=""})) ,
             div [] (map (drawRect << rectScaler model)  model.rects)
             ]
@@ -249,9 +295,11 @@ initialModel _ =
   ( { window = {width = 0, height = 0}
     , status = NotFull
     , loc = { x = 0, y = 0}
+    , storedloc = { x = 0, y = 0}
     , mouse = { x = 0, y = 0}
     , rects = []
     , pick = 0
+    , touch = Up
     , options = Array.fromList []}
   , Cmd.batch [
          Task.attempt GotViewport Browser.Dom.getViewport
