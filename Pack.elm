@@ -9,6 +9,7 @@ import Task
 import String exposing (fromInt, append, join)
 -- import NMA exposing (getNMAObject, Msg(..))
 import List exposing (map, range)
+import Array exposing (Array)
 import Random
 import Time
 
@@ -17,13 +18,13 @@ import Html.Events.Extra.Mouse as Mouse
 import Http
 import Json.Decode exposing (Decoder, field, string, map4, int)
 
-api = "https://dev.kieranbrowne.com/infinite-salon-api/"
+api = "https://kieranbrowne.com/infinite-salon/data/object/"
 
 
-getNMAObject : Int -> Int -> Cmd Msg
-getNMAObject x y =
+getNMAObject : String -> Cmd Msg
+getNMAObject id =
   Http.get
-    { url = api
+    { url = String.join "" [api , id]
     , expect = Http.expectJson GotJson nmaDecoder
     }
 
@@ -60,7 +61,9 @@ type alias Model
     , status : Status
     , loc : { x: Float, y: Float}
     , mouse : { x: Float, y: Float}
-    , rects : List Rect }
+    , rects : List Rect
+    , pick : Int
+    , options : Array String }
 
 type Msg
   = Noop
@@ -69,6 +72,7 @@ type Msg
   | MouseMove ( Float, Float )
   | Move
   | GotJson (Result Http.Error UnplacedRect)
+  | RandomPick Int
 
 
 
@@ -117,16 +121,26 @@ update msg model =
   case msg of
     Noop ->
       ( model, Cmd.none)
+
+    RandomPick pick ->
+        ( {model | pick = pick}, Cmd.none )
+
     AddRect ->
       case model.status of
           Full -> ( model, Cmd.none )
-          NotFull -> ( model, getNMAObject 4 4 )
+          NotFull ->
+              let id = case (Array.get model.pick model.options) of
+                           Just x -> x
+                           Nothing -> "111093"
+              in ( model, Cmd.batch [getNMAObject id , Random.generate RandomPick (Random.int 0 40)] )
     GotViewport (Ok x) ->
       ( { model | window = { width = (floor x.viewport.width), height = (floor x.viewport.height) }}, Cmd.none )
     GotViewport _ ->
       ( model , Cmd.none )
+
     MouseMove (x, y) ->
       ( {model | mouse = { x = (x - (toFloat model.window.width) / 2), y = (y - (toFloat model.window.height) / 2)}, status = NotFull}, Cmd.none )
+
     Move ->
         let pow = (sqrt (model.mouse.x^2 + model.mouse.y^2) - 100) / 10000
         in
@@ -135,6 +149,7 @@ update msg model =
                 ( {model | loc = { x = model.loc.x + model.mouse.x * pow, y = model.loc.y + model.mouse.y * pow * 2.5}, status = NotFull}, Cmd.none )
               False ->
                 ( model , Cmd.none )
+
     GotJson result ->
         case result of
             Ok newImg ->
@@ -207,10 +222,13 @@ initialModel _ =
     , status = NotFull
     , loc = { x = 0, y = 0}
     , mouse = { x = 0, y = 0}
-    , rects = [{x = -2, y = -2, w = 4, h = 4, color = "#f00", url="http://collectionsearch.nma.gov.au/nmacs-image-download/piction/dams_data/prodderivW/DAMS_INGEST/JOBS/WM_60618335/nma_60672802.jpg"}] }
+    , rects = [{x = -2, y = -2, w = 4, h = 4, color = "#f00", url="http://collectionsearch.nma.gov.au/nmacs-image-download/piction/dams_data/prodderivW/DAMS_INGEST/JOBS/WM_60618335/nma_60672802.jpg"}]
+    , pick = 0
+    , options = Array.fromList ["111093", "124649", "130791", "135578", "135585", "184451", "184649", "230014", "51049", "72643", "119160", "126016", "135349", "135579", "148312", "184505", "184657", "27762", "51050", "72644", "119182", "126019", "135350", "135582", "148408", "184509", "184716", "49587", "58904", "72682", "119258", "126596", "135571", "135583", "184447", "184512", "184803", "51048", "71099", "77210"]}
   , Cmd.batch [
          Task.attempt GotViewport Browser.Dom.getViewport
-        , getNMAObject 4 4
+        , getNMAObject "111093"
+        , Random.generate RandomPick (Random.int 0 10)
         ])
 
 
