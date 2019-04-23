@@ -4575,14 +4575,11 @@ var author$project$Main$NotFull = {$: 'NotFull'};
 var author$project$Main$RandomPick = function (a) {
 	return {$: 'RandomPick', a: a};
 };
-var author$project$Main$GotJson = function (a) {
-	return {$: 'GotJson', a: a};
+var author$project$Main$Up = {$: 'Up'};
+var author$project$Main$GotOptions = function (a) {
+	return {$: 'GotOptions', a: a};
 };
-var author$project$Main$api = 'https://kieranbrowne.com/infinite-salon/data/object/';
-var author$project$Main$UnplacedRect = F4(
-	function (w, h, url, color) {
-		return {color: color, h: h, url: url, w: w};
-	});
+var author$project$Main$api = 'https://kieranbrowne.com/infinite-salon/data/';
 var elm$core$Array$branchFactor = 32;
 var elm$core$Array$Array_elm_builtin = F4(
 	function (a, b, c, d) {
@@ -5058,17 +5055,9 @@ var elm$json$Json$Decode$errorToStringHelp = F2(
 			}
 		}
 	});
-var elm$json$Json$Decode$field = _Json_decodeField;
-var elm$json$Json$Decode$int = _Json_decodeInt;
-var elm$json$Json$Decode$map4 = _Json_map4;
+var elm$json$Json$Decode$list = _Json_decodeList;
 var elm$json$Json$Decode$string = _Json_decodeString;
-var author$project$Main$nmaDecoder = A5(
-	elm$json$Json$Decode$map4,
-	author$project$Main$UnplacedRect,
-	A2(elm$json$Json$Decode$field, 'w', elm$json$Json$Decode$int),
-	A2(elm$json$Json$Decode$field, 'h', elm$json$Json$Decode$int),
-	A2(elm$json$Json$Decode$field, 'url', elm$json$Json$Decode$string),
-	A2(elm$json$Json$Decode$field, 'color', elm$json$Json$Decode$string));
+var author$project$Main$nmaOptionsDecoder = elm$json$Json$Decode$list(elm$json$Json$Decode$string);
 var elm$core$Result$mapError = F2(
 	function (f, result) {
 		if (result.$ === 'Ok') {
@@ -5950,17 +5939,15 @@ var elm$http$Http$get = function (r) {
 	return elm$http$Http$request(
 		{body: elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: elm$core$Maybe$Nothing, tracker: elm$core$Maybe$Nothing, url: r.url});
 };
-var author$project$Main$getNMAObject = function (id) {
-	return elm$http$Http$get(
-		{
-			expect: A2(elm$http$Http$expectJson, author$project$Main$GotJson, author$project$Main$nmaDecoder),
-			url: A2(
-				elm$core$String$join,
-				'',
-				_List_fromArray(
-					[author$project$Main$api, id]))
-		});
-};
+var author$project$Main$getNMAOptions = elm$http$Http$get(
+	{
+		expect: A2(elm$http$Http$expectJson, author$project$Main$GotOptions, author$project$Main$nmaOptionsDecoder),
+		url: A2(
+			elm$core$String$join,
+			'',
+			_List_fromArray(
+				[author$project$Main$api, 'options']))
+	});
 var elm$browser$Browser$External = function (a) {
 	return {$: 'External', a: a};
 };
@@ -6227,9 +6214,6 @@ var elm$core$Array$fromList = function (list) {
 		return A3(elm$core$Array$fromListHelp, list, _List_Nil, 0);
 	}
 };
-var elm$core$Basics$negate = function (n) {
-	return -n;
-};
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Basics$composeL = F3(
 	function (g, f, x) {
@@ -6362,6 +6346,9 @@ var elm$random$Random$generate = F2(
 			elm$random$Random$Generate(
 				A2(elm$random$Random$map, tagger, generator)));
 	});
+var elm$core$Basics$negate = function (n) {
+	return -n;
+};
 var elm$core$Bitwise$and = _Bitwise_and;
 var elm$core$Bitwise$xor = _Bitwise_xor;
 var elm$random$Random$peel = function (_n0) {
@@ -6406,22 +6393,19 @@ var author$project$Main$initialModel = function (_n0) {
 		{
 			loc: {x: 0, y: 0},
 			mouse: {x: 0, y: 0},
-			options: elm$core$Array$fromList(
-				_List_fromArray(
-					['111093', '124649', '130791', '135578', '135585', '184451', '184649', '230014', '51049', '72643', '119160', '126016', '135349', '135579', '148312', '184505', '184657', '27762', '51050', '72644', '119182', '126019', '135350', '135582', '148408', '184509', '184716', '49587', '58904', '72682', '119258', '126596', '135571', '135583', '184447', '184512', '184803', '51048', '71099', '77210'])),
+			options: elm$core$Array$fromList(_List_Nil),
 			pick: 0,
-			rects: _List_fromArray(
-				[
-					{color: '#f00', h: 4, url: 'http://collectionsearch.nma.gov.au/nmacs-image-download/piction/dams_data/prodderivW/DAMS_INGEST/JOBS/WM_60618335/nma_60672802.jpg', w: 4, x: -2, y: -2}
-				]),
+			rects: _List_Nil,
 			status: author$project$Main$NotFull,
+			storedloc: {x: 0, y: 0},
+			touch: author$project$Main$Up,
 			window: {height: 0, width: 0}
 		},
 		elm$core$Platform$Cmd$batch(
 			_List_fromArray(
 				[
 					A2(elm$core$Task$attempt, author$project$Main$GotViewport, elm$browser$Browser$Dom$getViewport),
-					author$project$Main$getNMAObject('111093'),
+					author$project$Main$getNMAOptions,
 					A2(
 					elm$random$Random$generate,
 					author$project$Main$RandomPick,
@@ -6698,6 +6682,7 @@ var author$project$Main$subscriptions = function (model) {
 				elm$core$Basics$always(author$project$Main$AddRect))
 			]));
 };
+var author$project$Main$Down = {$: 'Down'};
 var author$project$Main$Full = {$: 'Full'};
 var elm$core$Basics$pow = _Basics_pow;
 var elm$core$Basics$sqrt = _Basics_sqrt;
@@ -6740,7 +6725,7 @@ var author$project$Main$possibleRects = F2(
 				return A2(
 					elm$core$List$map,
 					function (y) {
-						return {color: _new.color, h: _new.h, url: _new.url, w: _new.w, x: x, y: y};
+						return {color: _new.color, h: _new.h, id: _new.id, url: _new.url, w: _new.w, x: x, y: y};
 					},
 					A2(
 						elm$core$List$map,
@@ -6834,6 +6819,35 @@ var author$project$Main$addRect = F2(
 				}()
 			});
 	});
+var author$project$Main$GotJson = function (a) {
+	return {$: 'GotJson', a: a};
+};
+var author$project$Main$UnplacedRect = F5(
+	function (w, h, url, color, id) {
+		return {color: color, h: h, id: id, url: url, w: w};
+	});
+var elm$json$Json$Decode$field = _Json_decodeField;
+var elm$json$Json$Decode$int = _Json_decodeInt;
+var elm$json$Json$Decode$map5 = _Json_map5;
+var author$project$Main$nmaObjectDecoder = A6(
+	elm$json$Json$Decode$map5,
+	author$project$Main$UnplacedRect,
+	A2(elm$json$Json$Decode$field, 'w', elm$json$Json$Decode$int),
+	A2(elm$json$Json$Decode$field, 'h', elm$json$Json$Decode$int),
+	A2(elm$json$Json$Decode$field, 'url', elm$json$Json$Decode$string),
+	A2(elm$json$Json$Decode$field, 'color', elm$json$Json$Decode$string),
+	A2(elm$json$Json$Decode$field, 'id', elm$json$Json$Decode$string));
+var author$project$Main$getNMAObject = function (id) {
+	return elm$http$Http$get(
+		{
+			expect: A2(elm$http$Http$expectJson, author$project$Main$GotJson, author$project$Main$nmaObjectDecoder),
+			url: A2(
+				elm$core$String$join,
+				'',
+				_List_fromArray(
+					[author$project$Main$api, 'object/', id]))
+		});
+};
 var elm$core$Array$bitMask = 4294967295 >>> (32 - elm$core$Array$shiftStep);
 var elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
 var elm$core$Array$getHelp = F3(
@@ -6874,6 +6888,10 @@ var elm$core$Array$get = F2(
 			A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, tail)) : elm$core$Maybe$Just(
 			A3(elm$core$Array$getHelp, startShift, index, tree)));
 	});
+var elm$core$Array$length = function (_n0) {
+	var len = _n0.a;
+	return len;
+};
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var author$project$Main$update = F2(
 	function (msg, model) {
@@ -6910,7 +6928,10 @@ var author$project$Main$update = F2(
 									A2(
 									elm$random$Random$generate,
 									author$project$Main$RandomPick,
-									A2(elm$random$Random$int, 0, 40))
+									A2(
+										elm$random$Random$int,
+										0,
+										elm$core$Array$length(model.options)))
 								])));
 				}
 			case 'GotViewport':
@@ -6942,22 +6963,64 @@ var author$project$Main$update = F2(
 						}),
 					elm$core$Platform$Cmd$none);
 			case 'Move':
-				var pow = (elm$core$Basics$sqrt(
-					A2(elm$core$Basics$pow, model.mouse.x, 2) + A2(elm$core$Basics$pow, model.mouse.y, 2)) - 100) / 10000;
-				var _n4 = pow > 0;
-				if (_n4) {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								loc: {x: model.loc.x + (model.mouse.x * pow), y: model.loc.y + ((model.mouse.y * pow) * 2.5)},
-								status: author$project$Main$NotFull
-							}),
-						elm$core$Platform$Cmd$none);
+				var _n4 = model.touch;
+				if (_n4.$ === 'Up') {
+					var pow = (elm$core$Basics$sqrt(
+						A2(elm$core$Basics$pow, model.mouse.x, 2) + A2(elm$core$Basics$pow, model.mouse.y, 2)) - 100) / 10000;
+					var _n5 = pow > 0;
+					if (_n5) {
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									loc: {x: model.loc.x + (model.mouse.x * pow), y: model.loc.y + ((model.mouse.y * pow) * 2.5)},
+									status: author$project$Main$NotFull
+								}),
+							elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					}
 				} else {
 					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				}
-			default:
+			case 'TouchStart':
+				var _n6 = msg.a;
+				var x = _n6.a;
+				var y = _n6.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							mouse: {x: x, y: y},
+							storedloc: {x: model.loc.x, y: model.loc.y},
+							touch: author$project$Main$Down
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'TouchEnd':
+				var _n7 = msg.a;
+				var x = _n7.a;
+				var y = _n7.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							mouse: {x: 0, y: 0},
+							touch: author$project$Main$Up
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'TouchMove':
+				var _n8 = msg.a;
+				var x = _n8.a;
+				var y = _n8.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							loc: {x: model.storedloc.x - ((x - model.mouse.x) / 1), y: model.storedloc.y - ((y - model.mouse.y) / 1)},
+							status: author$project$Main$NotFull
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'GotJson':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					var newImg = result.a;
@@ -6967,10 +7030,33 @@ var author$project$Main$update = F2(
 				} else {
 					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				}
+			default:
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var newOptions = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								options: elm$core$Array$fromList(newOptions)
+							}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
 		}
 	});
 var author$project$Main$MouseMove = function (a) {
 	return {$: 'MouseMove', a: a};
+};
+var author$project$Main$TouchEnd = function (a) {
+	return {$: 'TouchEnd', a: a};
+};
+var author$project$Main$TouchMove = function (a) {
+	return {$: 'TouchMove', a: a};
+};
+var author$project$Main$TouchStart = function (a) {
+	return {$: 'TouchStart', a: a};
 };
 var elm$core$String$append = _String_append;
 var author$project$Main$px = function (x) {
@@ -6979,44 +7065,73 @@ var author$project$Main$px = function (x) {
 		elm$core$String$fromInt(x),
 		'px');
 };
+var elm$html$Html$a = _VirtualDom_node('a');
 var elm$html$Html$div = _VirtualDom_node('div');
+var elm$json$Json$Encode$string = _Json_wrap;
+var elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			elm$json$Json$Encode$string(string));
+	});
+var elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
 var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
 var author$project$Main$drawRect = function (r) {
 	return A2(
-		elm$html$Html$div,
+		elm$html$Html$a,
 		_List_fromArray(
 			[
-				A2(elm$html$Html$Attributes$style, 'background-color', r.color),
-				A2(elm$html$Html$Attributes$style, 'position', 'absolute'),
-				A2(
-				elm$html$Html$Attributes$style,
-				'width',
-				author$project$Main$px(r.w)),
-				A2(
-				elm$html$Html$Attributes$style,
-				'height',
-				author$project$Main$px(r.h)),
-				A2(
-				elm$html$Html$Attributes$style,
-				'left',
-				author$project$Main$px(r.x)),
-				A2(
-				elm$html$Html$Attributes$style,
-				'top',
-				author$project$Main$px(r.y)),
-				A2(
-				elm$html$Html$Attributes$style,
-				'background-image',
+				elm$html$Html$Attributes$href(
 				A2(
 					elm$core$String$join,
 					'',
 					_List_fromArray(
-						['url(', r.url, ')']))),
-				A2(elm$html$Html$Attributes$style, 'background-size', 'cover'),
-				A2(elm$html$Html$Attributes$style, 'background-position', 'center')
+						['http://collectionsearch.nma.gov.au/object/', r.id])))
 			]),
-		_List_Nil);
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2(elm$html$Html$Attributes$style, 'background-color', r.color),
+						A2(elm$html$Html$Attributes$style, 'position', 'absolute'),
+						A2(
+						elm$html$Html$Attributes$style,
+						'width',
+						author$project$Main$px(r.w)),
+						A2(
+						elm$html$Html$Attributes$style,
+						'height',
+						author$project$Main$px(r.h)),
+						A2(
+						elm$html$Html$Attributes$style,
+						'left',
+						author$project$Main$px(r.x)),
+						A2(
+						elm$html$Html$Attributes$style,
+						'top',
+						author$project$Main$px(r.y)),
+						A2(
+						elm$html$Html$Attributes$style,
+						'background-image',
+						A2(
+							elm$core$String$join,
+							'',
+							_List_fromArray(
+								['url(', r.url, ')']))),
+						A2(elm$html$Html$Attributes$style, 'background-size', 'cover'),
+						A2(elm$html$Html$Attributes$style, 'background-position', 'center')
+					]),
+				_List_Nil)
+			]));
 };
 var author$project$Main$rectScaler = F2(
 	function (model, rect) {
@@ -7024,29 +7139,45 @@ var author$project$Main$rectScaler = F2(
 		var x = ((rect.x * (author$project$Main$gutter + author$project$Main$gap)) + ((model.window.width / 2) | 0)) - elm$core$Basics$round(model.loc.x);
 		var w = (rect.w * author$project$Main$gap) + ((rect.w - 1) * author$project$Main$gutter);
 		var h = (rect.h * author$project$Main$gap) + ((rect.h - 1) * author$project$Main$gutter);
-		return {color: rect.color, h: h, url: rect.url, w: w, x: x, y: y};
+		return {color: rect.color, h: h, id: rect.id, url: rect.url, w: w, x: x, y: y};
 	});
-var elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			elm$virtual_dom$VirtualDom$on,
-			event,
-			elm$virtual_dom$VirtualDom$Normal(decoder));
+var elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return elm$core$Maybe$Nothing;
+		}
 	});
-var elm$html$Html$Events$onClick = function (msg) {
+var elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var author$project$Main$touchCoordinates = function (touchEvent) {
 	return A2(
-		elm$html$Html$Events$on,
-		'click',
-		elm$json$Json$Decode$succeed(msg));
+		elm$core$Maybe$withDefault,
+		_Utils_Tuple2(0, 0),
+		A2(
+			elm$core$Maybe$map,
+			function ($) {
+				return $.clientPos;
+			},
+			elm$core$List$head(touchEvent.changedTouches)));
 };
+var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
 var mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$defaultOptions = {preventDefault: true, stopPropagation: false};
 var elm$virtual_dom$VirtualDom$Custom = function (a) {
 	return {$: 'Custom', a: a};
 };
+var elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
 var elm$html$Html$Events$custom = F2(
 	function (event, decoder) {
 		return A2(
@@ -7148,33 +7279,126 @@ var mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions = F3(
 				mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$eventDecoder));
 	});
 var mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove = A2(mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions, 'mousemove', mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$defaultOptions);
-var author$project$Main$view = function (model) {
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$defaultOptions = {preventDefault: true, stopPropagation: false};
+var elm$json$Json$Decode$map4 = _Json_map4;
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$Event = F4(
+	function (keys, changedTouches, targetTouches, touches) {
+		return {changedTouches: changedTouches, keys: keys, targetTouches: targetTouches, touches: touches};
+	});
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$Touch = F4(
+	function (identifier, clientPos, pagePos, screenPos) {
+		return {clientPos: clientPos, identifier: identifier, pagePos: pagePos, screenPos: screenPos};
+	});
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$touchDecoder = A5(
+	elm$json$Json$Decode$map4,
+	mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$Touch,
+	A2(elm$json$Json$Decode$field, 'identifier', elm$json$Json$Decode$int),
+	mpizenberg$elm_pointer_events$Internal$Decode$clientPos,
+	mpizenberg$elm_pointer_events$Internal$Decode$pagePos,
+	mpizenberg$elm_pointer_events$Internal$Decode$screenPos);
+var elm$json$Json$Decode$andThen = _Json_andThen;
+var mpizenberg$elm_pointer_events$Internal$Decode$all = A2(
+	elm$core$List$foldr,
+	elm$json$Json$Decode$map2(elm$core$List$cons),
+	elm$json$Json$Decode$succeed(_List_Nil));
+var mpizenberg$elm_pointer_events$Internal$Decode$dynamicListOf = function (itemDecoder) {
+	var decodeOne = function (n) {
+		return A2(
+			elm$json$Json$Decode$field,
+			elm$core$String$fromInt(n),
+			itemDecoder);
+	};
+	var decodeN = function (n) {
+		return mpizenberg$elm_pointer_events$Internal$Decode$all(
+			A2(
+				elm$core$List$map,
+				decodeOne,
+				A2(elm$core$List$range, 0, n - 1)));
+	};
 	return A2(
-		elm$html$Html$div,
-		_List_fromArray(
-			[
-				A2(elm$html$Html$Attributes$style, 'width', '100vw'),
-				A2(elm$html$Html$Attributes$style, 'height', '100vh'),
-				A2(elm$html$Html$Attributes$style, 'position', 'relative'),
-				mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove(
-				function (event) {
-					return author$project$Main$MouseMove(event.screenPos);
-				}),
-				elm$html$Html$Events$onClick(author$project$Main$AddRect)
-			]),
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$div,
-				_List_Nil,
-				A2(
-					elm$core$List$map,
+		elm$json$Json$Decode$andThen,
+		decodeN,
+		A2(elm$json$Json$Decode$field, 'length', elm$json$Json$Decode$int));
+};
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$touchListDecoder = mpizenberg$elm_pointer_events$Internal$Decode$dynamicListOf;
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$eventDecoder = A5(
+	elm$json$Json$Decode$map4,
+	mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$Event,
+	mpizenberg$elm_pointer_events$Internal$Decode$keys,
+	A2(
+		elm$json$Json$Decode$field,
+		'changedTouches',
+		mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$touchListDecoder(mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$touchDecoder)),
+	A2(
+		elm$json$Json$Decode$field,
+		'targetTouches',
+		mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$touchListDecoder(mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$touchDecoder)),
+	A2(
+		elm$json$Json$Decode$field,
+		'touches',
+		mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$touchListDecoder(mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$touchDecoder)));
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onWithOptions = F3(
+	function (event, options, tag) {
+		return A2(
+			elm$html$Html$Events$custom,
+			event,
+			A2(
+				elm$json$Json$Decode$map,
+				function (ev) {
+					return {
+						message: tag(ev),
+						preventDefault: options.preventDefault,
+						stopPropagation: options.stopPropagation
+					};
+				},
+				mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$eventDecoder));
+	});
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onEnd = A2(mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onWithOptions, 'touchend', mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$defaultOptions);
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onMove = A2(mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onWithOptions, 'touchmove', mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$defaultOptions);
+var mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onStart = A2(mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onWithOptions, 'touchstart', mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$defaultOptions);
+var author$project$Main$view = function (model) {
+	var _n0 = elm$core$List$length(model.rects) > 0;
+	if (_n0) {
+		return A2(
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					A2(elm$html$Html$Attributes$style, 'width', '100vw'),
+					A2(elm$html$Html$Attributes$style, 'height', '100vh'),
+					A2(elm$html$Html$Attributes$style, 'position', 'relative'),
+					mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove(
+					function (event) {
+						return author$project$Main$MouseMove(event.screenPos);
+					}),
+					mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onStart(
+					A2(elm$core$Basics$composeL, author$project$Main$TouchStart, author$project$Main$touchCoordinates)),
+					mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onEnd(
+					A2(elm$core$Basics$composeL, author$project$Main$TouchEnd, author$project$Main$touchCoordinates)),
+					mpizenberg$elm_pointer_events$Html$Events$Extra$Touch$onMove(
+					A2(elm$core$Basics$composeL, author$project$Main$TouchMove, author$project$Main$touchCoordinates))
+				]),
+			_List_fromArray(
+				[
 					A2(
-						elm$core$Basics$composeL,
-						author$project$Main$drawRect,
-						author$project$Main$rectScaler(model)),
-					model.rects))
-			]));
+					elm$html$Html$div,
+					_List_Nil,
+					A2(
+						elm$core$List$map,
+						A2(
+							elm$core$Basics$composeL,
+							author$project$Main$drawRect,
+							author$project$Main$rectScaler(model)),
+						model.rects))
+				]));
+	} else {
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$text('loading')
+				]));
+	}
 };
 var elm$browser$Browser$element = _Browser_element;
 var author$project$Main$main = elm$browser$Browser$element(

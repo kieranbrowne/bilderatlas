@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (style, href)
 import Html exposing (..)
 import Html.Events exposing (onClick)
 import Browser
@@ -14,30 +14,45 @@ import Random
 import Time
 
 import Html.Events.Extra.Mouse as Mouse
+import Html.Events.Extra.Touch as Touch
+import Html.Events exposing (on)
 
 import Http
-import Json.Decode exposing (Decoder, field, string, map4, int)
+import Json.Decode as D exposing (Decoder, field, string, map5, int)
 
-api = "https://kieranbrowne.com/infinite-salon/data/object/"
+api = "https://kieranbrowne.com/infinite-salon/data/"
 
 
 getNMAObject : String -> Cmd Msg
 getNMAObject id =
   Http.get
-    { url = String.join "" [api , id]
-    , expect = Http.expectJson GotJson nmaDecoder
+    { url = String.join "" [api , "object/" , id]
+    , expect = Http.expectJson GotJson nmaObjectDecoder
     }
 
-nmaDecoder : Decoder UnplacedRect
-nmaDecoder =
-    map4 UnplacedRect
+nmaObjectDecoder : Decoder UnplacedRect
+nmaObjectDecoder =
+    map5 UnplacedRect
     ( field "w" int )
     ( field "h" int )
     ( field "url" string )
     ( field "color" string )
+    ( field "id" string )
+
+getNMAOptions : Cmd Msg
+getNMAOptions =
+  Http.get
+    { url = String.join "" [api , "options"]
+    , expect = Http.expectJson GotOptions nmaOptionsDecoder
+    }
+
+nmaOptionsDecoder : Decoder (List String)
+nmaOptionsDecoder =
+    D.list D.string
 
 
 type Status = Full | NotFull
+
 
 type alias Rect
   = { x: Int
@@ -46,6 +61,7 @@ type alias Rect
     , h: Int
     , url: String
     , color: String
+    , id: String
     }
 
 type alias UnplacedRect
@@ -53,17 +69,24 @@ type alias UnplacedRect
     , h: Int
     , url: String
     , color: String
+    , id: String
     }
 
+type Touch
+  = Up
+  | Down
 
 type alias Model
   = { window : { width: Int, height: Int}
     , status : Status
     , loc : { x: Float, y: Float}
+    , storedloc : { x: Float, y: Float}
     , mouse : { x: Float, y: Float}
     , rects : List Rect
     , pick : Int
-    , options : Array String }
+    , options : Array String
+    , touch : Touch
+    }
 
 type Msg
   = Noop
@@ -71,7 +94,11 @@ type Msg
   | GotViewport (Result () Browser.Dom.Viewport)
   | MouseMove ( Float, Float )
   | Move
+  | TouchStart ( Float, Float )
+  | TouchEnd ( Float, Float )
+  | TouchMove ( Float, Float )
   | GotJson (Result Http.Error UnplacedRect)
+  | GotOptions (Result Http.Error (List String))
   | RandomPick Int
 
 
@@ -90,7 +117,7 @@ possibleRects model new =
         miny = -(model.window.height // 2 // (gutter + gap))
         maxy = -miny - new.h
     in
-      (List.concatMap (\x -> (map (\y -> {  x=x, y=y, w=new.w, h=new.h, color=new.color, url=new.url })
+      (List.concatMap (\x -> (map (\y -> {  x=x, y=y, w=new.w, h=new.h, color=new.color, url=new.url, id=new.id })
                                   (map ((+) ((round model.loc.y) // 40)) (range miny maxy))))
             (map ((+) ((round model.loc.x) // 40)) (range minx maxx)))
 
@@ -132,7 +159,7 @@ update msg model =
               let id = case (Array.get model.pick model.options) of
                            Just x -> x
                            Nothing -> "111093"
-              in ( model, Cmd.batch [getNMAObject id , Random.generate RandomPick (Random.int 0 40)] )
+              in ( model, Cmd.batch [getNMAObject id , Random.generate RandomPick (Random.int 0 (Array.length model.options))] )
     GotViewport (Ok x) ->
       ( { model | window = { width = (floor x.viewport.width), height = (floor x.viewport.height) }}, Cmd.none )
     GotViewport _ ->
@@ -141,19 +168,45 @@ update msg model =
     MouseMove (x, y) ->
       ( {model | mouse = { x = (x - (toFloat model.window.width) / 2), y = (y - (toFloat model.window.height) / 2)}, status = NotFull}, Cmd.none )
 
+
     Move ->
-        let pow = (sqrt (model.mouse.x^2 + model.mouse.y^2) - 100) / 10000
-        in
-          case pow > 0 of
-              True ->
-                ( {model | loc = { x = model.loc.x + model.mouse.x * pow, y = model.loc.y + model.mouse.y * pow * 2.5}, status = NotFull}, Cmd.none )
-              False ->
-                ( model , Cmd.none )
+        case model.touch of
+            Up ->
+              let pow = (sqrt (model.mouse.x^2 + model.mouse.y^2) - 100) / 10000
+              in
+                case pow > 0 of
+                    True ->
+                      ( {model | loc = { x = model.loc.x + model.mouse.x * pow, y = model.loc.y + model.mouse.y * pow * 2.5}, status = NotFull}, Cmd.none )
+                    False ->
+                        (model, Cmd.none)
+            Down ->
+                (model, Cmd.none)
+
+    TouchStart (x,y) ->
+      ( { model | touch = Down
+        , mouse = {x= x, y= y}
+        , storedloc = {x= model.loc.x, y = model.loc.y}
+        } , Cmd.none )
+    TouchEnd (x,y) ->
+      ( { model | touch = Up
+        , mouse = {x=0,y=0}} , Cmd.none )
+    TouchMove (x, y) ->
+        ( {model
+              | loc = { x = model.storedloc.x - (x-model.mouse.x)/1
+                      , y = model.storedloc.y - (y-model.mouse.y)/1 }
+              , status = NotFull}, Cmd.none )
 
     GotJson result ->
         case result of
             Ok newImg ->
                 ( addRect newImg model, Cmd.none )
+            Err _ ->
+                ( model , Cmd.none )
+
+    GotOptions result ->
+        case result of
+            Ok newOptions ->
+                ( {model | options = Array.fromList newOptions}, Cmd.none )
             Err _ ->
                 ( model , Cmd.none )
 
@@ -175,20 +228,21 @@ rectScaler model rect =
         y = rect.y * (gutter+gap) + (model.window.height//2) - (round model.loc.y)
         w = rect.w * gap + (rect.w-1)*gutter
         h = rect.h * gap + (rect.h-1)*gutter
-    in { x=x, y=y, w=w, h=h, url=rect.url, color=rect.color }
+    in { x=x, y=y, w=w, h=h, url=rect.url, color=rect.color , id=rect.id}
 
 drawRect : Rect -> Html Msg
 drawRect r =
-    div [ style "background-color" r.color
-        , style "position" "absolute"
-        , style "width" (px r.w)
-        , style "height" (px r.h)
-        , style "left" (px r.x)
-        , style "top" (px r.y)
-        , style "background-image" (String.join "" [ "url(", r.url,  ")" ])
-        , style "background-size" "cover"
-        , style "background-position" "center"
-        ] []
+    a [ href (String.join "" [ "http://collectionsearch.nma.gov.au/object/", r.id ]) ]
+        [ div [ style "background-color" r.color
+              , style "position" "absolute"
+              , style "width" (px r.w)
+              , style "height" (px r.h)
+              , style "left" (px r.x)
+              , style "top" (px r.y)
+              , style "background-image" (String.join "" [ "url(", r.url,  ")" ])
+              , style "background-size" "cover"
+              , style "background-position" "center"
+              ] [] ]
 
 drawSpace : Rect -> Html Msg
 drawSpace r =
@@ -200,12 +254,32 @@ drawSpace r =
         , style "top" (px r.y)
         ] []
 
+
+touchCoordinates : Touch.Event -> ( Float, Float )
+touchCoordinates touchEvent =
+    List.head touchEvent.changedTouches
+        |> Maybe.map .clientPos
+        |> Maybe.withDefault ( 0, 0 )
+
+
 view : Model -> Html Msg
 view model =
-  div [ style "width" "100vw", style "height" "100vh", style "position" "relative",  Mouse.onMove (\event -> MouseMove event.screenPos), onClick AddRect]
-      [ -- div [] (map (drawSpace << rectScaler model) (possibleRects model 1 1))
-       div [] (map (drawRect << rectScaler model)  model.rects)
-      ]
+  case (List.length model.rects) > 0 of
+      True ->
+        div [ style "width" "100vw"
+            , style "height" "100vh"
+            , style "position" "relative"
+            , Mouse.onMove (\event -> MouseMove event.screenPos)
+            --, onClick AddRect
+            , Touch.onStart (TouchStart << touchCoordinates)
+            , Touch.onEnd (TouchEnd << touchCoordinates)
+            , Touch.onMove (TouchMove << touchCoordinates)
+            ]
+            [-- div [] (map (drawSpace << rectScaler model) (possibleRects model {w=1,h=1,url="",color=""})) ,
+            div [] (map (drawRect << rectScaler model)  model.rects)
+            ]
+      False ->
+           div [] [text "loading"]
 
 
 subscriptions : Model -> Sub Msg
@@ -221,13 +295,16 @@ initialModel _ =
   ( { window = {width = 0, height = 0}
     , status = NotFull
     , loc = { x = 0, y = 0}
+    , storedloc = { x = 0, y = 0}
     , mouse = { x = 0, y = 0}
-    , rects = [{x = -2, y = -2, w = 4, h = 4, color = "#f00", url="http://collectionsearch.nma.gov.au/nmacs-image-download/piction/dams_data/prodderivW/DAMS_INGEST/JOBS/WM_60618335/nma_60672802.jpg"}]
+    , rects = []
     , pick = 0
-    , options = Array.fromList ["111093", "124649", "130791", "135578", "135585", "184451", "184649", "230014", "51049", "72643", "119160", "126016", "135349", "135579", "148312", "184505", "184657", "27762", "51050", "72644", "119182", "126019", "135350", "135582", "148408", "184509", "184716", "49587", "58904", "72682", "119258", "126596", "135571", "135583", "184447", "184512", "184803", "51048", "71099", "77210"]}
+    , touch = Up
+    , options = Array.fromList []}
   , Cmd.batch [
          Task.attempt GotViewport Browser.Dom.getViewport
-        , getNMAObject "111093"
+        --, getNMAObject "111093"
+        , getNMAOptions
         , Random.generate RandomPick (Random.int 0 10)
         ])
 
