@@ -12,13 +12,15 @@ import List exposing (map, range)
 import Array exposing (Array)
 import Random
 import Time
+import Browser.Navigation
+import Debug exposing (toString)
 
 import Html.Events.Extra.Mouse as Mouse
 import Html.Events.Extra.Touch as Touch
 import Html.Events exposing (on)
 
 import Http
-import Json.Decode as D exposing (Decoder, field, string, map5, int)
+import Json.Decode as D exposing (Decoder, field)
 
 api = "https://kieranbrowne.com/infinite-salon/data/"
 
@@ -32,12 +34,13 @@ getNMAObject id =
 
 nmaObjectDecoder : Decoder UnplacedRect
 nmaObjectDecoder =
-    map5 UnplacedRect
-    ( field "w" int )
-    ( field "h" int )
-    ( field "url" string )
-    ( field "color" string )
-    ( field "id" string )
+    D.map6 UnplacedRect
+    ( field "w" D.int )
+    ( field "h" D.int )
+    ( field "url" D.string )
+    ( field "color" D.string )
+    ( field "id" D.string )
+    ( field "closest" (D.list D.string) )
 
 getNMAOptions : Cmd Msg
 getNMAOptions =
@@ -62,6 +65,7 @@ type alias Rect
     , url: String
     , color: String
     , id: String
+    , closest: List String
     }
 
 type alias UnplacedRect
@@ -70,6 +74,7 @@ type alias UnplacedRect
     , url: String
     , color: String
     , id: String
+    , closest: List String
     }
 
 type Touch
@@ -117,9 +122,59 @@ possibleRects model new =
         miny = -(model.window.height // 2 // (gutter + gap))
         maxy = -miny - new.h
     in
-      (List.concatMap (\x -> (map (\y -> {  x=x, y=y, w=new.w, h=new.h, color=new.color, url=new.url, id=new.id })
+      (List.concatMap (\x -> (map (\y -> { x=x, y=y, w=new.w, h=new.h, color=new.color, url=new.url, id=new.id, closest=new.closest })
                                   (map ((+) ((round model.loc.y) // 40)) (range miny maxy))))
             (map ((+) ((round model.loc.x) // 40)) (range minx maxx)))
+
+withinRange : Model -> Model
+withinRange model =
+    let minx = -(model.window.width // 2 // (gutter + gap))
+        maxx = -minx - 5
+        miny = -(model.window.height // 2 // (gutter + gap))
+        maxy = -miny - 5
+        x = ((round model.loc.x) // 40)
+        y = ((round model.loc.y) // 40)
+    in
+        {model | rects = List.filter (\r -> r.x+x > minx && r.x+x < maxx && r.y+y > miny && r.y+y < maxy) model.rects}
+
+
+nextID : Model -> Maybe String
+nextID model =
+    let sorted =
+            (List.sortBy centredness
+                 (map (\r -> {r | x=r.x + ((round model.loc.x) // 40)
+                             , y=r.y + ((round model.loc.y) // 40)
+                             }) model.rects))
+        best =
+            case (List.head sorted) of
+                Just x -> x
+                Nothing -> {x=0,y=0,w=0,h=0,url="",color="",id="",closest=[]}
+        others =
+            case (List.tail sorted) of
+                Just x -> x
+                Nothing -> []
+        remaining =
+            case List.tail best.closest of
+                Just x -> x
+                Nothing -> []
+        c =
+            case List.head best.closest of
+                Just x -> x
+                Nothing -> "NULL"
+    in case List.isEmpty best.closest of
+        True ->
+            let submodel = {model | rects=List.filter (\r -> r /= best) model.rects}
+            in
+              case List.isEmpty submodel.rects of
+                  True -> Array.get model.pick model.options
+                  False -> nextID submodel
+        _ ->
+            case List.member c (Array.toList model.options) of
+                True -> Just c
+                False -> let newmodel = case remaining of
+                                []  -> { model | rects = others}
+                                _ -> { model | rects = {best|closest = remaining} :: others}
+                         in nextID newmodel
 
 
 
@@ -129,11 +184,11 @@ addRect new model =
                    Just r -> [r]
                    Nothing -> []
     in { model | rects = model.rects ++ best
-        , status = case best of
-                              [] -> Full
-                              _ -> NotFull
+        , status =
+             case best of
+                 [] -> Full
+                 _ -> NotFull
        }
-
 
 overlap : Rect -> Rect -> Bool
 overlap r1 r2 =
@@ -156,10 +211,20 @@ update msg model =
       case model.status of
           Full -> ( model, Cmd.none )
           NotFull ->
-              let id = case (Array.get model.pick model.options) of
+              let select =
+                      case (List.head (List.sortBy centredness
+                                           (map (\r -> {r | x=r.x + ((round model.loc.x) // 40)
+                                                          , y=r.y + ((round model.loc.y) // 40)
+                                                       }) model.rects))) of
+                          Just x -> x
+                          Nothing -> { x=0, y=0, w=0, h=0, url="", id="", color="", closest=[] }
+                  id = case nextID (withinRange model) of
                            Just x -> x
-                           Nothing -> "111093"
-              in ( model, Cmd.batch [getNMAObject id , Random.generate RandomPick (Random.int 0 (Array.length model.options))] )
+                           Nothing ->
+                               case (Array.get model.pick model.options) of
+                                   Just x -> ""
+                                   Nothing -> ""
+              in ( {model | options = Array.filter (\x -> x /= id) model.options }, Cmd.batch [getNMAObject id , Random.generate RandomPick (Random.int 0 (Array.length model.options))] )
     GotViewport (Ok x) ->
       ( { model | window = { width = (floor x.viewport.width), height = (floor x.viewport.height) }}, Cmd.none )
     GotViewport _ ->
@@ -206,7 +271,12 @@ update msg model =
     GotOptions result ->
         case result of
             Ok newOptions ->
-                ( {model | options = Array.fromList newOptions}, Cmd.none )
+                let nextid =
+                        case Array.get model.pick (Array.fromList newOptions) of
+                            Just x -> x
+                            Nothing -> "111093"
+                in
+                  ( {model | options = Array.fromList (List.filter (\x -> x /= nextid) newOptions)}, getNMAObject nextid )
             Err _ ->
                 ( model , Cmd.none )
 
@@ -228,7 +298,7 @@ rectScaler model rect =
         y = rect.y * (gutter+gap) + (model.window.height//2) - (round model.loc.y)
         w = rect.w * gap + (rect.w-1)*gutter
         h = rect.h * gap + (rect.h-1)*gutter
-    in { x=x, y=y, w=w, h=h, url=rect.url, color=rect.color , id=rect.id}
+    in { rect | x=x, y=y, w=w, h=h}
 
 drawRect : Rect -> Html Msg
 drawRect r =
@@ -276,7 +346,9 @@ view model =
             , Touch.onMove (TouchMove << touchCoordinates)
             ]
             [-- div [] (map (drawSpace << rectScaler model) (possibleRects model {w=1,h=1,url="",color=""})) ,
-            div [] (map (drawRect << rectScaler model)  model.rects)
+            div []
+                [text (toString (Array.length model.options)),
+                div [] (map (drawRect << rectScaler model)  model.rects)]
             ]
       False ->
            div [] [text "loading"]
@@ -305,7 +377,7 @@ initialModel _ =
          Task.attempt GotViewport Browser.Dom.getViewport
         --, getNMAObject "111093"
         , getNMAOptions
-        , Random.generate RandomPick (Random.int 0 10)
+        , Random.generate RandomPick (Random.int 0 1000)
         ])
 
 
