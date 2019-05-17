@@ -1,8 +1,8 @@
 module Main exposing (..)
 
-import Html.Attributes exposing (style, href, contenteditable, size)
+import Html.Attributes exposing (style, href, contenteditable, size, value)
 import Html exposing (..)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, onSubmit)
 import Browser
 import Browser.Dom
 import Task
@@ -22,10 +22,10 @@ import Html.Events exposing (on)
 import Http
 import Json.Decode as D exposing (Decoder, field)
 
-api = "https://kieranbrowne.com/infinite-salon/data/"
+api = "http://kieranbrowne.com/nma-explorer/data/"
 
 
-options = ["man", "woman", "child", "gondolier"]
+options = ["pier", "envelope", "menu", "gondolier"]
 
 
 getNMAObject : String -> Cmd Msg
@@ -49,6 +49,13 @@ getNMAOptions : Cmd Msg
 getNMAOptions =
   Http.get
     { url = String.join "" [api , "options"]
+    , expect = Http.expectJson GotOptions nmaOptionsDecoder
+    }
+
+getNMACategory : String -> Cmd Msg
+getNMACategory query =
+  Http.get
+    { url = String.join "" [api , "categories/" , query]
     , expect = Http.expectJson GotOptions nmaOptionsDecoder
     }
 
@@ -110,6 +117,7 @@ type Msg
   | GotOptions (Result Http.Error (List String))
   | RandomPick Int
   | NewQuery String
+  | SubmitQuery
 
 
 gap = 38
@@ -203,6 +211,26 @@ overlap r1 r2 =
      && (r1.y < r2.y+r2.h)
 
 
+similar : Model -> Model -> String
+similar model reducer =
+    case List.head (List.filter (\x -> not (List.isEmpty x.closest)) reducer.rects) of
+        Just rect ->
+            case List.head rect.closest of
+                Just id ->
+                    case (List.member id (map (\x -> x.id) model.rects)) of
+                        True ->
+                            similar model
+                                {reducer | rects =
+                                     (List.map
+                                          (\r -> {r | closest =
+                                               (List.filter
+                                                    (\x -> not (List.member x (map (\y -> y.id) model.rects)))
+                                                         r.closest)})
+                                          reducer.rects)}
+                        False -> id
+                Nothing -> ""
+        Nothing -> ""
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
@@ -212,6 +240,8 @@ update msg model =
     NewQuery txt ->
         ( {model | query = txt}, Cmd.none )
 
+    SubmitQuery ->
+        ( {model | query = model.query ++ complete model}, getNMACategory (model.query ++ complete model))
 
     RandomPick pick ->
         ( {model | pick = pick}, Cmd.none )
@@ -220,20 +250,10 @@ update msg model =
       case model.status of
           Full -> ( model, Cmd.none )
           NotFull ->
-              let select =
-                      case (List.head (List.sortBy centredness
-                                           (map (\r -> {r | x=r.x + ((round model.loc.x) // block)
-                                                          , y=r.y + ((round model.loc.y) // block)
-                                                       }) model.rects))) of
-                          Just x -> x
-                          Nothing -> { x=0, y=0, w=0, h=0, url="", id="", color="", closest=[] }
-                  id = case nextID (withinRange model) of
+              let id = case Array.get model.pick model.options of
                            Just x -> x
-                           Nothing ->
-                               case (Array.get model.pick model.options) of
-                                   Just x -> ""
-                                   Nothing -> ""
-              in ( {model | options = Array.filter (\x -> x /= id) model.options }, Cmd.batch [getNMAObject id , Random.generate RandomPick (Random.int 0 (Array.length model.options))] )
+                           Nothing -> similar model model
+              in ( {model | options = Array.filter (\x -> x /= id) model.options }, Cmd.batch [ getNMAObject id , Random.generate RandomPick (Random.int 0 (Array.length model.options))] )
     GotViewport (Ok x) ->
       ( { model | window = { width = (floor x.viewport.width), height = (floor x.viewport.height) }}, Cmd.none )
     GotViewport _ ->
@@ -283,7 +303,7 @@ update msg model =
                 let nextid =
                         case Array.get model.pick (Array.fromList newOptions) of
                             Just x -> x
-                            Nothing -> "111093"
+                            Nothing -> ""
                 in
                   ( {model | options = Array.fromList (List.filter (\x -> x /= nextid) newOptions)}, getNMAObject nextid )
             Err _ ->
@@ -336,12 +356,13 @@ drawRect model r =
 
             in
               div [
-                --contenteditable True
                 style "background-color" r.color
                 , style "position" "absolute"
                 , style "appearance" "none"
                 , style "border" "none"
                 , style "padding-left" ".5em"
+                , style "padding-right" ".5em"
+                , style "box-sizing" "border-box"
                 , style "text-align" "center"
                 , style "font-size" "1rem"
                 , style "font-family" "monospace"
@@ -352,20 +373,22 @@ drawRect model r =
                 , style "top" (px r.y)
                 , style "background-size" "cover"
                 , style "background-position" "center"
-                ] [  input [ contenteditable True,
-                                style "width" w,
-                                style "height" "auto",
-                                style "appearance" "none",
-                 style "font-family" "monospace",
-                style "font-size" "1rem",
-                                style "border" "none",
-                                style "background" "none",
-                                style "background" "none",
-                                style "display" ib,
-                                size 0
-                                ,on "keyup" (D.map NewQuery     targetTextContent)
-                            , onInput NewQuery
-                          ] [ text model.query ] ,
+                ] [ form [ onSubmit SubmitQuery, style "display" "inline" ]
+                        [ input [ contenteditable True
+                                , style "width" w
+                                , style "height" "auto"
+                                , style "appearance" "none"
+                                , style "font-family" "monospace"
+                                , style "font-size" "1rem"
+                                , style "border" "none"
+                                , style "background" "none"
+                                , style "background" "none"
+                                , style "display" ib
+                                , size 0
+                                , on "keyup" (D.map NewQuery targetTextContent)
+                                , onInput NewQuery
+                                , value model.query
+                          ] [ text model.query ] ] ,
                     span [style "color" "#aaa"] [ text (complete model)]
                   ]
         _ ->
@@ -407,15 +430,15 @@ view model =
             , style "height" "100vh"
             , style "position" "relative"
             , Mouse.onMove (\event -> MouseMove event.screenPos)
-            --, onClick AddRect
             , Touch.onStart (TouchStart << touchCoordinates)
             , Touch.onEnd (TouchEnd << touchCoordinates)
             , Touch.onMove (TouchMove << touchCoordinates)
             ]
             [ --div [] (map (drawSpace << rectScaler model) (possibleRects model {w=1,h=1,url="",color="", id="", closest=[]})) ,
             div []
-                [ text model.query,
-                 div [] (map (drawRect model << rectScaler model)  model.rects)]
+                [ text (toString (Array.length model.options))
+                , text (similar model model)
+                , div [] (map (drawRect model << rectScaler model)  model.rects)]
             ]
       False ->
            div [] [text "loading"]
@@ -423,10 +446,10 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.batch [ --Time.every block (always Move) ,
-                  --Time.every 200 (always AddRect)
-         --, Time.every 100 (always (getNMAObject 4 4))
-            ]
+    Sub.batch
+        [ Time.every 40 (always Move)
+        , Time.every 500 (always AddRect)
+        ]
 
 
 initialModel: () -> ( Model, Cmd Msg )
@@ -445,7 +468,7 @@ initialModel _ =
          Task.attempt GotViewport Browser.Dom.getViewport
         --, getNMAObject "111093"
         --, getNMAOptions
-        , Random.generate RandomPick (Random.int 0 1000)
+        , Random.generate RandomPick (Random.int 0 0)
         ])
 
 
