@@ -7764,11 +7764,6 @@ var author$project$Main$view = function (model) {
 					_List_Nil,
 					_List_fromArray(
 						[
-							elm$html$Html$text(
-							elm$core$Debug$toString(
-								elm$core$Array$length(model.options))),
-							elm$html$Html$text(
-							A2(author$project$Main$similar, model, model)),
 							A2(
 							elm$html$Html$div,
 							_List_Nil,
