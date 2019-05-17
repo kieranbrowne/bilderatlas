@@ -436,9 +436,9 @@ view model =
             ]
             [ --div [] (map (drawSpace << rectScaler model) (possibleRects model {w=1,h=1,url="",color="", id="", closest=[]})) ,
             div []
-                [ text (toString (Array.length model.options))
-                , text (similar model model)
-                , div [] (map (drawRect model << rectScaler model)  model.rects)]
+                [ --text (toString (Array.length model.options))
+                --,
+                    div [] (map (drawRect model << rectScaler model)  model.rects)]
             ]
       False ->
            div [] [text "loading"]
