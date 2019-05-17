@@ -1,8 +1,8 @@
 module Main exposing (..)
 
-import Html.Attributes exposing (style, href)
+import Html.Attributes exposing (style, href, contenteditable, size)
 import Html exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Browser
 import Browser.Dom
 import Task
@@ -23,6 +23,9 @@ import Http
 import Json.Decode as D exposing (Decoder, field)
 
 api = "https://kieranbrowne.com/infinite-salon/data/"
+
+
+options = ["man", "woman", "child", "gondolier"]
 
 
 getNMAObject : String -> Cmd Msg
@@ -87,6 +90,7 @@ type alias Model
     , loc : { x: Float, y: Float}
     , storedloc : { x: Float, y: Float}
     , mouse : { x: Float, y: Float}
+    , query : String
     , rects : List Rect
     , pick : Int
     , options : Array String
@@ -105,11 +109,12 @@ type Msg
   | GotJson (Result Http.Error UnplacedRect)
   | GotOptions (Result Http.Error (List String))
   | RandomPick Int
+  | NewQuery String
 
 
-
-gap = 32
+gap = 38
 gutter = 8
+block = gap + gutter
 
 centredness : Rect -> Float
 centredness r = sqrt (toFloat ((r.x + r.w//2)^2 + (r.y + r.h//2)^2))
@@ -123,8 +128,8 @@ possibleRects model new =
         maxy = -miny - new.h
     in
       (List.concatMap (\x -> (map (\y -> { x=x, y=y, w=new.w, h=new.h, color=new.color, url=new.url, id=new.id, closest=new.closest })
-                                  (map ((+) ((round model.loc.y) // 40)) (range miny maxy))))
-            (map ((+) ((round model.loc.x) // 40)) (range minx maxx)))
+                                  (map ((+) ((round model.loc.y) // block)) (range miny maxy))))
+            (map ((+) ((round model.loc.x) // block)) (range minx maxx)))
 
 withinRange : Model -> Model
 withinRange model =
@@ -132,8 +137,8 @@ withinRange model =
         maxx = -minx - 5
         miny = -(model.window.height // 2 // (gutter + gap))
         maxy = -miny - 5
-        x = ((round model.loc.x) // 40)
-        y = ((round model.loc.y) // 40)
+        x = ((round model.loc.x) // block)
+        y = ((round model.loc.y) // block)
     in
         {model | rects = List.filter (\r -> r.x+x > minx && r.x+x < maxx && r.y+y > miny && r.y+y < maxy) model.rects}
 
@@ -142,8 +147,8 @@ nextID : Model -> Maybe String
 nextID model =
     let sorted =
             (List.sortBy centredness
-                 (map (\r -> {r | x=r.x + ((round model.loc.x) // 40)
-                             , y=r.y + ((round model.loc.y) // 40)
+                 (map (\r -> {r | x=r.x + ((round model.loc.x) // block)
+                             , y=r.y + ((round model.loc.y) // block)
                              }) model.rects))
         best =
             case (List.head sorted) of
@@ -204,6 +209,10 @@ update msg model =
     Noop ->
       ( model, Cmd.none)
 
+    NewQuery txt ->
+        ( {model | query = txt}, Cmd.none )
+
+
     RandomPick pick ->
         ( {model | pick = pick}, Cmd.none )
 
@@ -213,8 +222,8 @@ update msg model =
           NotFull ->
               let select =
                       case (List.head (List.sortBy centredness
-                                           (map (\r -> {r | x=r.x + ((round model.loc.x) // 40)
-                                                          , y=r.y + ((round model.loc.y) // 40)
+                                           (map (\r -> {r | x=r.x + ((round model.loc.x) // block)
+                                                          , y=r.y + ((round model.loc.y) // block)
                                                        }) model.rects))) of
                           Just x -> x
                           Nothing -> { x=0, y=0, w=0, h=0, url="", id="", color="", closest=[] }
@@ -300,19 +309,77 @@ rectScaler model rect =
         h = rect.h * gap + (rect.h-1)*gutter
     in { rect | x=x, y=y, w=w, h=h}
 
-drawRect : Rect -> Html Msg
-drawRect r =
-    a [ href (String.join "" [ "http://collectionsearch.nma.gov.au/object/", r.id ]) ]
-        [ div [ style "background-color" r.color
-              , style "position" "absolute"
-              , style "width" (px r.w)
-              , style "height" (px r.h)
-              , style "left" (px r.x)
-              , style "top" (px r.y)
-              , style "background-image" (String.join "" [ "url(", r.url,  ")" ])
-              , style "background-size" "cover"
-              , style "background-position" "center"
-              ] [] ]
+targetTextContent : Decoder String
+targetTextContent =
+  D.at ["target", "textContent"] D.string
+
+complete : Model -> String
+complete model =
+    case model.query of
+        "" -> ""
+        _ ->
+          case List.head (List.filter (String.startsWith model.query) options) of
+              Just s -> String.slice (String.length model.query) 99 s
+              Nothing -> ""
+
+drawRect : Model -> Rect -> Html Msg
+drawRect model r =
+    case r.color of
+        "#ddd" ->
+            let w = case model.query of
+                    "" -> "100%"
+                    _ -> toString (toFloat (String.length model.query)*9.6) ++ "px"
+                ib = case model.query of
+                    "" -> "inline-block"
+                    _ -> "inline"
+
+
+            in
+              div [
+                --contenteditable True
+                style "background-color" r.color
+                , style "position" "absolute"
+                , style "appearance" "none"
+                , style "border" "none"
+                , style "padding-left" ".5em"
+                , style "text-align" "center"
+                , style "font-size" "1rem"
+                , style "font-family" "monospace"
+                , style "width" (px r.w)
+                , style "height" (px r.h)
+                , style "line-height" (px r.h)
+                , style "left" (px r.x)
+                , style "top" (px r.y)
+                , style "background-size" "cover"
+                , style "background-position" "center"
+                ] [  input [ contenteditable True,
+                                style "width" w,
+                                style "height" "auto",
+                                style "appearance" "none",
+                 style "font-family" "monospace",
+                style "font-size" "1rem",
+                                style "border" "none",
+                                style "background" "none",
+                                style "background" "none",
+                                style "display" ib,
+                                size 0
+                                ,on "keyup" (D.map NewQuery     targetTextContent)
+                            , onInput NewQuery
+                          ] [ text model.query ] ,
+                    span [style "color" "#aaa"] [ text (complete model)]
+                  ]
+        _ ->
+            a [ href (String.join "" [ "http://collectionsearch.nma.gov.au/object/", r.id ]) ]
+                [ div [ style "background-color" r.color
+                  , style "position" "absolute"
+                  , style "width" (px r.w)
+                  , style "height" (px r.h)
+                  , style "left" (px r.x)
+                  , style "top" (px r.y)
+                  , style "background-image" (String.join "" [ "url(", r.url,  ")" ])
+                  , style "background-size" "cover"
+                  , style "background-position" "center"
+                  ] [] ]
 
 drawSpace : Rect -> Html Msg
 drawSpace r =
@@ -345,10 +412,10 @@ view model =
             , Touch.onEnd (TouchEnd << touchCoordinates)
             , Touch.onMove (TouchMove << touchCoordinates)
             ]
-            [-- div [] (map (drawSpace << rectScaler model) (possibleRects model {w=1,h=1,url="",color=""})) ,
+            [ --div [] (map (drawSpace << rectScaler model) (possibleRects model {w=1,h=1,url="",color="", id="", closest=[]})) ,
             div []
-                [text (toString (Array.length model.options)),
-                div [] (map (drawRect << rectScaler model)  model.rects)]
+                [ text model.query,
+                 div [] (map (drawRect model << rectScaler model)  model.rects)]
             ]
       False ->
            div [] [text "loading"]
@@ -356,8 +423,8 @@ view model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.batch [ Time.every 40 (always Move)
-            , Time.every 200 (always AddRect)
+  Sub.batch [ --Time.every block (always Move) ,
+                  --Time.every 200 (always AddRect)
          --, Time.every 100 (always (getNMAObject 4 4))
             ]
 
@@ -369,14 +436,15 @@ initialModel _ =
     , loc = { x = 0, y = 0}
     , storedloc = { x = 0, y = 0}
     , mouse = { x = 0, y = 0}
-    , rects = []
+    , rects = [{x=-4,y=-1,w=8,h=1,color="#ddd",id="",url="",closest=[]}]
+    , query = ""
     , pick = 0
     , touch = Up
     , options = Array.fromList []}
   , Cmd.batch [
          Task.attempt GotViewport Browser.Dom.getViewport
         --, getNMAObject "111093"
-        , getNMAOptions
+        --, getNMAOptions
         , Random.generate RandomPick (Random.int 0 1000)
         ])
 
