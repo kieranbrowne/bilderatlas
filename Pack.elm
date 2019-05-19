@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html.Attributes exposing (style, href, contenteditable, size, value)
+import Html.Attributes exposing (style, href, contenteditable, size, value, placeholder)
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Browser
@@ -22,10 +22,10 @@ import Html.Events exposing (on)
 import Http
 import Json.Decode as D exposing (Decoder, field)
 
-api = "http://kieranbrowne.com/nma-explorer/data/"
+api = "//kieranbrowne.com/nma-explorer/data/"
 
 
-options = ["pier", "envelope", "menu", "gondolier"]
+options = ["pier", "envelope", "menu", "coffee mug"]
 
 
 getNMAObject : String -> Cmd Msg
@@ -55,7 +55,7 @@ getNMAOptions =
 getNMACategory : String -> Cmd Msg
 getNMACategory query =
   Http.get
-    { url = String.join "" [api , "categories/" , query]
+    { url = String.join "" [api , "categories/" , String.replace " " "_" query]
     , expect = Http.expectJson GotOptions nmaOptionsDecoder
     }
 
@@ -264,17 +264,20 @@ update msg model =
 
 
     Move ->
-        case model.touch of
-            Up ->
-              let pow = (sqrt (model.mouse.x^2 + model.mouse.y^2) - 100) / 10000
-              in
-                case pow > 0 of
-                    True ->
-                      ( {model | loc = { x = model.loc.x + model.mouse.x * pow, y = model.loc.y + model.mouse.y * pow * 2.5}, status = NotFull}, Cmd.none )
-                    False ->
+        case List.length model.rects > 1 of
+            False -> (model, Cmd.none)
+            True ->
+                case model.touch of
+                    Up ->
+                      let pow = (sqrt (model.mouse.x^2 + model.mouse.y^2) - 100) / 10000
+                      in
+                        case pow > 0 of
+                            True ->
+                              ( {model | loc = { x = model.loc.x + model.mouse.x * pow, y = model.loc.y + model.mouse.y * pow * 2.5}, status = NotFull}, Cmd.none )
+                            False ->
+                                (model, Cmd.none)
+                    Down ->
                         (model, Cmd.none)
-            Down ->
-                (model, Cmd.none)
 
     TouchStart (x,y) ->
       ( { model | touch = Down
@@ -384,9 +387,11 @@ drawRect model r =
                                 , style "background" "none"
                                 , style "background" "none"
                                 , style "display" ib
+                                , style "text-align" "center"
                                 , size 0
                                 , on "keyup" (D.map NewQuery targetTextContent)
                                 , onInput NewQuery
+                                , placeholder "e.g. maze..."
                                 , value model.query
                           ] [ text model.query ] ] ,
                     span [style "color" "#aaa"] [ text (complete model)]
