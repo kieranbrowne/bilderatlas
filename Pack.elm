@@ -52,6 +52,13 @@ getNMAOptions =
     , expect = Http.expectJson GotOptions nmaOptionsDecoder
     }
 
+getNMACategories : Cmd Msg
+getNMACategories =
+  Http.get
+    { url = String.join "" [api , "category_list"]
+    , expect = Http.expectJson GotCategories nmaOptionsDecoder
+    }
+
 getNMACategory : String -> Cmd Msg
 getNMACategory query =
   Http.get
@@ -101,6 +108,7 @@ type alias Model
     , rects : List Rect
     , pick : Int
     , options : Array String
+    , categories : List String
     , touch : Touch
     }
 
@@ -115,6 +123,7 @@ type Msg
   | TouchMove ( Float, Float )
   | GotJson (Result Http.Error UnplacedRect)
   | GotOptions (Result Http.Error (List String))
+  | GotCategories (Result Http.Error (List String))
   | RandomPick Int
   | NewQuery String
   | SubmitQuery
@@ -312,6 +321,13 @@ update msg model =
             Err _ ->
                 ( model , Cmd.none )
 
+    GotCategories result ->
+        case result of
+            Ok cats ->
+                ( {model | categories = map (String.replace "_" " ") cats }, Cmd.none )
+            Err _ ->
+                ( model , Cmd.none )
+
 
 
 
@@ -341,7 +357,7 @@ complete model =
     case model.query of
         "" -> ""
         _ ->
-          case List.head (List.filter (String.startsWith model.query) options) of
+          case List.head (List.filter (String.startsWith model.query) model.categories) of
               Just s -> String.slice (String.length model.query) 99 s
               Nothing -> ""
 
@@ -391,7 +407,7 @@ drawRect model r =
                                 , size 0
                                 , on "keyup" (D.map NewQuery targetTextContent)
                                 , onInput NewQuery
-                                , placeholder "e.g. maze..."
+                                , placeholder (String.join "" ["e.g. ", Maybe.withDefault "mask" (Array.get model.pick (Array.fromList model.categories)), "..."])
                                 , value model.query
                           ] [ text model.query ] ] ,
                     span [style "color" "#aaa"] [ text (complete model)]
@@ -468,12 +484,13 @@ initialModel _ =
     , query = ""
     , pick = 0
     , touch = Up
+    , categories = []
     , options = Array.fromList []}
   , Cmd.batch [
          Task.attempt GotViewport Browser.Dom.getViewport
         --, getNMAObject "111093"
-        --, getNMAOptions
-        , Random.generate RandomPick (Random.int 0 0)
+        , getNMACategories
+        , Random.generate RandomPick (Random.int 0 3000)
         ])
 
 
