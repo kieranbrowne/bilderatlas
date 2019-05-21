@@ -262,7 +262,9 @@ update msg model =
               let id = case Array.get model.pick model.options of
                            Just x -> x
                            Nothing -> similar model model
-              in ( {model | options = Array.filter (\x -> x /= id) model.options }, Cmd.batch [ getNMAObject id , Random.generate RandomPick (Random.int 0 (Array.length model.options))] )
+              in ( {model | options = Array.filter (\x -> x /= id) model.options }, Cmd.batch [ getNMAObject id
+                                                                                              --, Random.generate RandomPick (Random.int 0 (Array.length model.options))
+                                                                                              ] )
     GotViewport (Ok x) ->
       ( { model | window = { width = (floor x.viewport.width), height = (floor x.viewport.height) }}, Cmd.none )
     GotViewport _ ->
