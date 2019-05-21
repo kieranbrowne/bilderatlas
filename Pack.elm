@@ -407,7 +407,7 @@ drawRect model r =
                                 , size 0
                                 , on "keyup" (D.map NewQuery targetTextContent)
                                 , onInput NewQuery
-                                , placeholder (String.join "" ["e.g. ", Maybe.withDefault "mask" (Array.get model.pick (Array.fromList model.categories)), "..."])
+                                , placeholder (String.join "" ["e.g. ", Maybe.withDefault "mask" (Array.get (modBy (List.length model.categories) model.pick) (Array.fromList model.categories)), "..."])
                                 , value model.query
                           ] [ text model.query ] ] ,
                     span [style "color" "#aaa"] [ text (complete model)]
@@ -473,8 +473,8 @@ subscriptions model =
         ]
 
 
-initialModel: () -> ( Model, Cmd Msg )
-initialModel _ =
+initialModel: Int -> ( Model, Cmd Msg )
+initialModel flags =
   ( { window = {width = 0, height = 0}
     , status = NotFull
     , loc = { x = 0, y = 0}
@@ -482,15 +482,15 @@ initialModel _ =
     , mouse = { x = 0, y = 0}
     , rects = [{x=-4,y=-1,w=8,h=1,color="#ddd",id="",url="",closest=[]}]
     , query = ""
-    , pick = 0
+    , pick = flags
     , touch = Up
-    , categories = []
+    , categories = ["mask"]
     , options = Array.fromList []}
   , Cmd.batch [
          Task.attempt GotViewport Browser.Dom.getViewport
         --, getNMAObject "111093"
         , getNMACategories
-        , Random.generate RandomPick (Random.int 0 3000)
+        --, Random.generate RandomPick (Random.int 0 3000)
         ])
 
 
