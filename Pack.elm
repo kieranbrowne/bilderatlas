@@ -106,6 +106,7 @@ type alias Model
     , mouse : { x: Float, y: Float}
     , query : String
     , rects : List Rect
+    , catpick : Int
     , pick : Int
     , options : Array String
     , categories : List String
@@ -263,7 +264,7 @@ update msg model =
                            Just x -> x
                            Nothing -> similar model model
               in ( {model | options = Array.filter (\x -> x /= id) model.options }, Cmd.batch [ getNMAObject id
-                                                                                              --, Random.generate RandomPick (Random.int 0 (Array.length model.options))
+                                                                                              , Random.generate RandomPick (Random.int 0 (Array.length model.options))
                                                                                               ] )
     GotViewport (Ok x) ->
       ( { model | window = { width = (floor x.viewport.width), height = (floor x.viewport.height) }}, Cmd.none )
@@ -409,7 +410,7 @@ drawRect model r =
                                 , size 0
                                 , on "keyup" (D.map NewQuery targetTextContent)
                                 , onInput NewQuery
-                                , placeholder (String.join "" ["e.g. ", Maybe.withDefault "mask" (Array.get (modBy (List.length model.categories) model.pick) (Array.fromList model.categories)), "..."])
+                                , placeholder (String.join "" ["e.g. ", Maybe.withDefault "mask" (Array.get (modBy (List.length model.categories) model.catpick) (Array.fromList model.categories)), "..."])
                                 , value model.query
                           ] [ text model.query ] ] ,
                     span [style "color" "#aaa"] [ text (complete model)]
@@ -484,7 +485,8 @@ initialModel flags =
     , mouse = { x = 0, y = 0}
     , rects = [{x=-4,y=-1,w=8,h=1,color="#ddd",id="",url="",closest=[]}]
     , query = ""
-    , pick = flags
+    , catpick = flags
+    , pick = 0
     , touch = Up
     , categories = ["mask"]
     , options = Array.fromList []}
@@ -492,7 +494,7 @@ initialModel flags =
          Task.attempt GotViewport Browser.Dom.getViewport
         --, getNMAObject "111093"
         , getNMACategories
-        --, Random.generate RandomPick (Random.int 0 3000)
+        , Random.generate RandomPick (Random.int 0 3000)
         ])
 
 
