@@ -22,7 +22,7 @@ import Html.Events exposing (on)
 import Http
 import Json.Decode as D exposing (Decoder, field)
 
-api = "//kieranbrowne.com/nma-explorer/data/"
+api = "//kieranbrowne.com/bilderatlas/data/"
 
 
 options = ["pier", "envelope", "menu", "coffee mug"]

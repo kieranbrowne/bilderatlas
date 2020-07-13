@@ -4579,7 +4579,7 @@ var author$project$Main$Up = {$: 'Up'};
 var author$project$Main$GotCategories = function (a) {
 	return {$: 'GotCategories', a: a};
 };
-var author$project$Main$api = '//kieranbrowne.com/nma-explorer/data/';
+var author$project$Main$api = '//kieranbrowne.com/bilderatlas/data/';
 var elm$core$Array$branchFactor = 32;
 var elm$core$Array$Array_elm_builtin = F4(
 	function (a, b, c, d) {
