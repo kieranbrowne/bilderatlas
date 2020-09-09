@@ -7,9 +7,15 @@ body {
   from {transform: scale(.8); opacity: 0;}
   to {transform: scale(1); opacity: 1;}
 }
-div > div > a > div {
+div > div > a > img {
   transform-origin: center center;
   animation-name: example;
   animation-duration: 1s;
+  animation-delay: 1.5s;
+  animation-fill-mode: backwards;
+}
+
+input[type="text"] {
+  outline: none;
 }
 

@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-import Html.Attributes exposing (style, href, contenteditable, size, value, placeholder)
+import Html.Attributes exposing (style, href, contenteditable, size, value, placeholder, src, attribute)
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Browser
@@ -396,9 +396,10 @@ drawRect model r =
                 , style "background-size" "cover"
                 , style "background-position" "center"
                 ] [ form [ onSubmit SubmitQuery, style "display" "inline" ]
-                        [ input [ contenteditable True
-                                , style "width" w
+                        [ input [ style "width" w
                                 , style "height" "auto"
+                              --, contenteditable True
+                                , style "outline" "none"
                                 , style "appearance" "none"
                                 , style "font-family" "monospace"
                                 , style "font-size" "1rem"
@@ -417,15 +418,20 @@ drawRect model r =
                   ]
         _ ->
             a [ href (String.join "" [ "http://collectionsearch.nma.gov.au/object/", r.id ]) ]
-                [ div [ style "background-color" r.color
+                [ img [ --style "background-color" r.color
+
+                  src (String.join "" [ "https://dev.kieranbrowne.com/", r.id, ".jpg" ])
+                            ,attribute "onload" "function () {alert(\"test\");}"
                   , style "position" "absolute"
                   , style "width" (px r.w)
                   , style "height" (px r.h)
+                  , style "object-fit" "contain"
+                  , style "border" "none"
                   , style "left" (px r.x)
                   , style "top" (px r.y)
-                  , style "background-image" (String.join "" [ "url(", "https://dev.kieranbrowne.com/", r.id, ".jpg",  ")" ])
-                  , style "background-size" "cover"
-                  , style "background-position" "center"
+                  -- , style "background-image" (String.join "" [ "url(", "https://dev.kieranbrowne.com/", r.id, ".jpg",  ")" ])
+                  -- , style "background-size" "cover"
+                  -- , style "background-position" "center"
                   ] [] ]
 
 drawSpace : Rect -> Html Msg
