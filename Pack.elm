@@ -429,6 +429,7 @@ drawRect model r =
                   , style "border" "none"
                   , style "left" (px r.x)
                   , style "top" (px r.y)
+                  -- , style "transform" (String.join "" [ "translate(", (px r.x), ",", (px r.y),  ")" ])
                   -- , style "background-image" (String.join "" [ "url(", "https://dev.kieranbrowne.com/", r.id, ".jpg",  ")" ])
                   -- , style "background-size" "cover"
                   -- , style "background-position" "center"
