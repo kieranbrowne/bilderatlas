@@ -7317,19 +7317,19 @@ var elm$core$Maybe$withDefault = F2(
 var elm$html$Html$a = _VirtualDom_node('a');
 var elm$html$Html$div = _VirtualDom_node('div');
 var elm$html$Html$form = _VirtualDom_node('form');
+var elm$html$Html$img = _VirtualDom_node('img');
 var elm$html$Html$input = _VirtualDom_node('input');
 var elm$html$Html$span = _VirtualDom_node('span');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
-var elm$json$Json$Encode$bool = _Json_wrap;
-var elm$html$Html$Attributes$boolProperty = F2(
-	function (key, bool) {
+var elm$virtual_dom$VirtualDom$attribute = F2(
+	function (key, value) {
 		return A2(
-			_VirtualDom_property,
-			key,
-			elm$json$Json$Encode$bool(bool));
+			_VirtualDom_attribute,
+			_VirtualDom_noOnOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlUri(value));
 	});
-var elm$html$Html$Attributes$contenteditable = elm$html$Html$Attributes$boolProperty('contentEditable');
+var elm$html$Html$Attributes$attribute = elm$virtual_dom$VirtualDom$attribute;
 var elm$json$Json$Encode$string = _Json_wrap;
 var elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -7350,6 +7350,12 @@ var elm$html$Html$Attributes$size = function (n) {
 		_VirtualDom_attribute,
 		'size',
 		elm$core$String$fromInt(n));
+};
+var elm$html$Html$Attributes$src = function (url) {
+	return A2(
+		elm$html$Html$Attributes$stringProperty,
+		'src',
+		_VirtualDom_noJavaScriptOrHtmlUri(url));
 };
 var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
@@ -7487,9 +7493,9 @@ var author$project$Main$drawRect = F2(
 								elm$html$Html$input,
 								_List_fromArray(
 									[
-										elm$html$Html$Attributes$contenteditable(true),
 										A2(elm$html$Html$Attributes$style, 'width', w),
 										A2(elm$html$Html$Attributes$style, 'height', 'auto'),
+										A2(elm$html$Html$Attributes$style, 'outline', 'none'),
 										A2(elm$html$Html$Attributes$style, 'appearance', 'none'),
 										A2(elm$html$Html$Attributes$style, 'font-family', 'monospace'),
 										A2(elm$html$Html$Attributes$style, 'font-size', '1rem'),
@@ -7557,10 +7563,16 @@ var author$project$Main$drawRect = F2(
 				_List_fromArray(
 					[
 						A2(
-						elm$html$Html$div,
+						elm$html$Html$img,
 						_List_fromArray(
 							[
-								A2(elm$html$Html$Attributes$style, 'background-color', r.color),
+								elm$html$Html$Attributes$src(
+								A2(
+									elm$core$String$join,
+									'',
+									_List_fromArray(
+										['https://dev.kieranbrowne.com/', r.id, '.jpg']))),
+								A2(elm$html$Html$Attributes$attribute, 'onload', 'function () {alert(\"test\");}'),
 								A2(elm$html$Html$Attributes$style, 'position', 'absolute'),
 								A2(
 								elm$html$Html$Attributes$style,
@@ -7570,6 +7582,8 @@ var author$project$Main$drawRect = F2(
 								elm$html$Html$Attributes$style,
 								'height',
 								author$project$Main$px(r.h)),
+								A2(elm$html$Html$Attributes$style, 'object-fit', 'contain'),
+								A2(elm$html$Html$Attributes$style, 'border', 'none'),
 								A2(
 								elm$html$Html$Attributes$style,
 								'left',
@@ -7577,17 +7591,7 @@ var author$project$Main$drawRect = F2(
 								A2(
 								elm$html$Html$Attributes$style,
 								'top',
-								author$project$Main$px(r.y)),
-								A2(
-								elm$html$Html$Attributes$style,
-								'background-image',
-								A2(
-									elm$core$String$join,
-									'',
-									_List_fromArray(
-										['url(', 'https://dev.kieranbrowne.com/', r.id, '.jpg', ')']))),
-								A2(elm$html$Html$Attributes$style, 'background-size', 'cover'),
-								A2(elm$html$Html$Attributes$style, 'background-position', 'center')
+								author$project$Main$px(r.y))
 							]),
 						_List_Nil)
 					]));
