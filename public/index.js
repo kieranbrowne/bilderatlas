@@ -7585,7 +7585,7 @@ var author$project$Main$drawRect = F2(
 									elm$core$String$join,
 									'',
 									_List_fromArray(
-										['url(', r.url, ')']))),
+										['url(', 'https://dev.kieranbrowne.com/', r.id, '.jpg', ')']))),
 								A2(elm$html$Html$Attributes$style, 'background-size', 'cover'),
 								A2(elm$html$Html$Attributes$style, 'background-position', 'center')
 							]),
