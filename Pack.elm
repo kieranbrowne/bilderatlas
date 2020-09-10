@@ -478,7 +478,7 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Time.every 40 (always Move)
+        [ Time.every 60 (always Move)
         , Time.every 500 (always AddRect)
         ]
 

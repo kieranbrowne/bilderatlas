@@ -11,7 +11,7 @@ div > div > a > img {
   transform-origin: center center;
   animation-name: example;
   animation-duration: 1s;
-  animation-delay: 1.5s;
+  animation-delay: .6s;
   animation-fill-mode: backwards;
 }
 
