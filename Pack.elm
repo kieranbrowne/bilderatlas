@@ -22,6 +22,7 @@ import Html.Events exposing (on)
 import Http
 import Json.Decode as D exposing (Decoder, field)
 
+--api = "//kieranbrowne.com/bilderatlas/data/"
 api = "//kieranbrowne.com/bilderatlas/data/"
 
 
@@ -420,7 +421,7 @@ drawRect model r =
             a [ href (String.join "" [ "http://collectionsearch.nma.gov.au/object/", r.id ]) ]
                 [ img [ --style "background-color" r.color
 
-                  src (String.join "" [ "https://dev.kieranbrowne.com/", r.id, ".jpg" ])
+                  src r.url
                             ,attribute "onload" "function () {alert(\"test\");}"
                   , style "position" "absolute"
                   , style "width" (px r.w)
@@ -430,7 +431,7 @@ drawRect model r =
                   , style "left" (px r.x)
                   , style "top" (px r.y)
                   -- , style "transform" (String.join "" [ "translate(", (px r.x), ",", (px r.y),  ")" ])
-                  -- , style "background-image" (String.join "" [ "url(", "https://dev.kieranbrowne.com/", r.id, ".jpg",  ")" ])
+                  -- , style "background-image" (String.join "" [ "url(", r.url  ")" ])
                   -- , style "background-size" "cover"
                   -- , style "background-position" "center"
                   ] [] ]
