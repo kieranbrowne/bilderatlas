@@ -6681,7 +6681,7 @@ var author$project$Main$subscriptions = function (model) {
 			[
 				A2(
 				elm$time$Time$every,
-				40,
+				60,
 				elm$core$Basics$always(author$project$Main$Move)),
 				A2(
 				elm$time$Time$every,
@@ -7566,12 +7566,7 @@ var author$project$Main$drawRect = F2(
 						elm$html$Html$img,
 						_List_fromArray(
 							[
-								elm$html$Html$Attributes$src(
-								A2(
-									elm$core$String$join,
-									'',
-									_List_fromArray(
-										['https://dev.kieranbrowne.com/', r.id, '.jpg']))),
+								elm$html$Html$Attributes$src(r.url),
 								A2(elm$html$Html$Attributes$attribute, 'onload', 'function () {alert(\"test\");}'),
 								A2(elm$html$Html$Attributes$style, 'position', 'absolute'),
 								A2(
