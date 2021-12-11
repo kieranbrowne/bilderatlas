@@ -418,7 +418,7 @@ drawRect model r =
                     span [style "color" "#aaa"] [ text (complete model)]
                   ]
         _ ->
-            a [ href (String.join "" [ "http://collectionsearch.nma.gov.au/object/", r.id ]) ]
+            a [ href (String.join "" [ "https://collectionsearch.nma.gov.au/s/hw/EMU.EMUIRN/", r.id ]) ]
                 [ img [ --style "background-color" r.color
 
                   src r.url
