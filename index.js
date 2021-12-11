@@ -7558,7 +7558,7 @@ var author$project$Main$drawRect = F2(
 							elm$core$String$join,
 							'',
 							_List_fromArray(
-								['http://collectionsearch.nma.gov.au/object/', r.id])))
+								['https://collectionsearch.nma.gov.au/s/hw/EMU.EMUIRN/', r.id])))
 					]),
 				_List_fromArray(
 					[
